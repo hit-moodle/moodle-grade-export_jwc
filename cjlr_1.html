@@ -1,0 +1,32 @@
+﻿<html>
+	<body>
+<table width="740" border="0" align="center" cellpadding="0" cellspacing="0">
+<tr>
+    <td>
+	<form name="form1" method="post" action="kc.php?id=<?php echo $id ?>">
+    	<table width="60%"   border="1" align="center" cellpadding="1" cellspacing="0">
+        <tr>
+    <td width="47%" height="25"><div align="center"><b>请选择学期</b></div></td>
+    <td width="53%">
+        <select name="XQ" id="XQ"  >
+        	<?php foreach($matches[1] as $i => $match)
+        	{
+        	echo '<option value='.iconv('GB2312', 'UTF-8', $match).'>'.iconv('GB2312', 'UTF-8', $matches[2][$i]).'</option>';
+        }
+        	 ?>
+        <!--<option <?php $i = 0; $matches[1][$i]?> ><?php echo iconv('GB2312', 'UTF-8', $matches[2][$i++])?></option><option $matches[1][$i] selected ><?php echo iconv('GB2312', 'UTF-8', $matches[2][$i++])?></option><option <?php $matches[1][$i]?> ><?php echo iconv('GB2312', 'UTF-8', $matches[2][$i++])?></option><option <?php $matches[1][$i]?> ><?php echo iconv('GB2312', 'UTF-8', $matches[2][$i++])?></option><option <?php $matches[1][$i]?> ><?php echo iconv('GB2312', 'UTF-8', $matches[2][$i++])?></option><option <?php $matches[1][$i]?> ><?php echo iconv('GB2312', 'UTF-8', $matches[2][$i++])?></option><option <?php $matches[1][$i]?> ><?php echo iconv('GB2312', 'UTF-8', $matches[2][$i++])?></option><option <?php $matches[1][$i]?> ><?php echo iconv('GB2312', 'UTF-8', $matches[2][$i++])?></option><option <?php $matches[1][$i]?> ><?php echo iconv('GB2312', 'UTF-8', $matches[2][$i++])?></option><option <?php $matches[1][$i]?> ><?php echo iconv('GB2312', 'UTF-8', $matches[2][$i++])?></option><option <?php $matches[1][$i]?> ><?php echo iconv('GB2312', 'UTF-8', $matches[2][$i++])?></option><option <?php $matches[1][$i]?> ><?php echo iconv('GB2312', 'UTF-8', $matches[2][$i++])?></option><option <?php $matches[1][$i]?> ><?php echo iconv('GB2312', 'UTF-8', $matches[2][$i++])?></option><option <?php $matches[1][$i]?> ><?php echo iconv('GB2312', 'UTF-8', $matches[2][$i++])?></option><option <?php $matches[1][$i]?> ><?php echo iconv('GB2312', 'UTF-8', $matches[2][$i++])?></option><option <?php $matches[1][$i]?> ><?php echo iconv('GB2312', 'UTF-8', $matches[2][$i++])?></option>-->
+        </select>
+    </td>
+        </tr>
+        <tr>
+          <td height="36" colspan="2"><div align="right">
+            <input type="submit" name="Submit" value="选择" >
+          </div></td>
+        </tr>
+     </table>
+   </form>
+ </td>
+</tr>
+</table>
+    </body>
+</html>          
