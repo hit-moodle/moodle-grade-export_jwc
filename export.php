@@ -55,7 +55,12 @@ curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
 $result = curl_exec($ch);
 
 //获得课程信息
-preg_match_all("/<a\shref='CJ_LRStart.asp\?(ID=\d+&fxddkb=.*&kcm=.+&kclb=.+&xq=.+&kccode=\w+&Rs=\d+&JZFS=\d+&KCXZ=.+&JF=.+&BH=\d+)'>.{8}<\/a>/",$result,$matches,PREG_PATTERN_ORDER);
+//preg_match_all("/<a\shref='CJ_LRStart.asp\?(ID=\d+&fxddkb=.*&kcm=.+&kclb=.+&xq=.+&kccode=\w+&Rs=\d+&JZFS=\d+&KCXZ=.+&JF=.+&BH=\d+)'>.{8}<\/a>/",$result,$matches,PREG_PATTERN_ORDER);
+if (!preg_match_all("/<a\shref='cjlr_Start.asp\?(kclb=.+&xq=.+&kccode=\w+&XKID=\d+&isDX=\d+&BH=\d+&KCXZ=.+)'>.{8}<\/a>/",$result,$matches,PREG_PATTERN_ORDER)) {
+    echo '教务处网站有变化，需要更新导出程序。请联系管理员。';
+    exit();
+}
+
 
 //获取考试成绩cj
 $id_grade = array();//学生成绩
@@ -106,7 +111,7 @@ $cj_post = 0;//成功传递成绩的数目
 //循环处理每个班次
 foreach($matches[1] as $param) {
 //获取CJ_LRStart.asp页面
-curl_setopt($ch, CURLOPT_URL, "http://xscj.hit.edu.cn/hitjwgl/teacher/CJGL/CJ_LRStart.asp?".$param);
+curl_setopt($ch, CURLOPT_URL, "http://xscj.hit.edu.cn/hitjwgl/teacher/CJGL/cjlr_Start.asp?".$param);
 curl_setopt($ch, CURLOPT_POST, FALSE);
 
 $result = curl_exec($ch);
@@ -115,11 +120,12 @@ $result = curl_exec($ch);
 preg_match_all("/<input\sname=\"xh\d+\"\stype=\"hidden\"\svalue=\"(\d+)\">/",$result,$xh,PREG_PATTERN_ORDER);
 preg_match_all("/<input\sname=\"WJ\d+\"\stype=\"hidden\"\svalue=\"(.*?)\">/",$result,$WJ,PREG_PATTERN_ORDER);
 preg_match_all("/<input\sname=\"HK\d+\"\stype=\"hidden\"\svalue=\"(.*?)\">/",$result,$HK,PREG_PATTERN_ORDER);
-preg_match_all("/<input\sclass=QT\sname=\"cj\d+\"\stype=\"text\"\ssize=\"6\"\smaxlength=\"5\"\s+onChange=\"checkNum\(cj\d+\);\"\s+onkeypress=\"return\shandleEnter\(this,\sevent\)\"\s+value=\"(\d+)\".+>/",$result,$cj,PREG_PATTERN_ORDER);
+#preg_match_all("/<input\sclass=QT\sname=\"cj\d+\"\stype=\"text\"\ssize=\"6\"\smaxlength=\"5\"\s+onChange=\"checkNum\(cj\d+\);\"\s+onkeypress=\"return\shandleEnter\(this,\sevent\)\"\s+value=\"(\d+)\".+>/",$result,$cj,PREG_PATTERN_ORDER);
+preg_match_all("/<input.+\sname=\"zcj\d+\".+\sid=\"zcj\d+\".+\svalue=\"(\d+)\".+>/",$result,$cj,PREG_PATTERN_ORDER);
 //其他hidden参数
 preg_match_all("/<input\sname=\"(\w+)\"\stype=\"hidden\"\sid=\"\w+\"\svalue=\"(.*)\">/",$result,$other_data,PREG_PATTERN_ORDER);
-preg_match_all("/<td\sclass=\"style2\"><div\salign=\"center\">(\w+)<\/div><\/td>/",$result,$bh,PREG_PATTERN_ORDER);
-preg_match_all("/<td\sclass=\"style2\"><div\salign=\"center\">(.+)\s*.\s*<input\sname=\"WJ/",$result,$xm,PREG_PATTERN_ORDER);
+preg_match_all("/<td><div\salign=\"center\" class=\"style1\">(\w+)<\/div><\/td>/",$result,$bh,PREG_PATTERN_ORDER);
+preg_match_all("/<td><div\salign=\"center\" class=\"style1\">(.+)\s*.\s*<input\sname=\"WJ/",$result,$xm,PREG_PATTERN_ORDER);
 preg_match_all("/<input\sname=\"ALLXS\"\stype=\"hidden\"\svalue=\"(.*)\">/",$result,$xs_num,PREG_PATTERN_ORDER);
 
 $st_in_jwc = array();//教务处学生信息
