@@ -250,8 +250,10 @@ foreach ($classes as $class) {
     curl_setopt($ch, CURLOPT_URL, "http://xscj.hit.edu.cn/hitjwgl/teacher/CJGL/$action_url");
     curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data_string);
 
-    if (curl_exec($ch));
+    if (curl_exec($ch))
         echo '导出成功，请到教务处网站确认，然后上交成绩。';
+    else
+        echo '导出失败！！！';
 
     print_box_end();
 }
