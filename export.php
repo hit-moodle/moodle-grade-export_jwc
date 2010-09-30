@@ -54,6 +54,7 @@ foreach ($class_table->getElementsByTagName('tr') as $i => $tr) {
     if ($i == 0) // skip headline
         continue;
     $tds = $tr->getElementsByTagName('td');
+    $class = new object();
     $class->name = trim($tds->item(1)->getElementsByTagName('div')->item(0)->nodeValue);
     $class->link = 'http://xscj.hit.edu.cn/hitjwgl/teacher/CJGL/'.$tds->item(4)->getElementsByTagName('a')->item(0)->getAttribute('href');
     $classes[] = $class;
@@ -61,6 +62,11 @@ foreach ($class_table->getElementsByTagName('tr') as $i => $tr) {
 
 //-------------------- 开始处理提交 ----------------------
 foreach ($classes as $class) {
+    $jwc_cols = array();   // jwc成绩项
+    $users = array();       // jwc学生信息及输入框name等
+    $moodle_cols = array(); // moodle上层类别和成绩项
+    $modified_userid = array(); // 修改过成绩的用户的jwc id
+
     print_box_start();
     echo "<br />导出班级：$class->name <br/>";
     curl_setopt($ch, CURLOPT_POST, FALSE);
@@ -76,7 +82,6 @@ foreach ($classes as $class) {
     $rows = $form_table->getElementsByTagName('tr');
 
     // 得到jwc的列
-    $jwc_cols = array();
     $title_row = $rows->item(0);
     $cols = $title_row->getElementsByTagName('td');
     foreach ($cols as $col) {
@@ -90,7 +95,6 @@ foreach ($classes as $class) {
     echo '教务处网站成绩项：'.implode('，', $jwc_cols).'<br />';
 
     // 获取jwc数据
-    $users = array();
     $count = 0;
     foreach ($rows as $row) {
         if ($count != 0) {
@@ -111,7 +115,6 @@ foreach ($classes as $class) {
                 $user_cols[] = $user_col;
                 $colnum++;
             }
-            $user_cols['modified'] = false;
             $users[] = $user_cols;
         }
         $count++;
@@ -133,8 +136,6 @@ foreach ($classes as $class) {
     //----------------moodle数据整理---------------
 
     // 得到最上层的分类和成绩项信息
-    $moodle_cols = array();
-
     $grade = new grade_tree($course->id, false, true);
 
     $topcats = $grade->top_element['children'];
@@ -152,10 +153,11 @@ foreach ($classes as $class) {
         }
     }
     echo '本站顶级成绩项：';
+    $names = array();
     foreach ($moodle_cols as $col) {
-        echo $col->itemname.' ';
+        $names[] = $col->itemname;
     }
-    echo '<br />';
+    echo implode('，', $names).'<br />';
 
     //只需要传哪些？
     $temp_cols = array();
@@ -165,10 +167,11 @@ foreach ($classes as $class) {
     }
     $moodle_cols = $temp_cols;
     echo '将导出成绩项：';
+    $names = array();
     foreach ($moodle_cols as $col) {
-        echo $col->itemname.' ';
+        $names[] = $col->itemname;
     }
-    echo '<br />';
+    echo implode('，', $names).'<br />';
 
     // moodle成绩写入$users
     $geub = new grade_export_update_buffer();
@@ -188,7 +191,8 @@ foreach ($classes as $class) {
                         {
                             $name = key($jwc_user[$jwc_col_id]->input);
                             $jwc_user[$jwc_col_id]->input[$name] = $finalgrade;
-                            $jwc_user['modified'] = true;
+                            if (!in_array($jwcid, $modified_userid))
+                                $modified_userid[] = $jwcid;
                         }
                     }
                 }
@@ -198,27 +202,23 @@ foreach ($classes as $class) {
     $gui->close();
     $geub->close();
 
-    $count = 0;
-    $unexported_users = array();
-    foreach ($users as $user) {
-        if ($user['modified'])
-            $count++;
-        else
-            $unexported_users[] = $user;
-    }
-    echo '将导出学生数：'.$count,'<br />';
-    if (!empty($unexported_users)) {
-        echo '<b>本站找不到与以下同学匹配的成绩记录，请核实后，手工录入！</b>';
+    echo '将导出学生数：'.count($modified_userid),'<br />';
+    $table = new object();
+    if (count($users) > count($modified_userid)) {
+        echo '<b>本站找不到与以下同学匹配的成绩，或该同学在本站的成绩为空，请核实后，手工录入！</b>';
         $table->align = array ('left', 'left');//每一列在表格的left or right
         $table->cellpadding = 3;
         $table->width = '0%';
         $table->tablealign = 'left';
-        $table->head = array('学号', '姓名');
-        foreach ($unexported_users as $user) {
-            $line = array();
-            $line[] = $user[$ID_COL]->value;
-            $line[] = $user[$NAME_COL]->value;
-            $table->data[] = $line;
+        $table->head = array('序号', '学号', '姓名');
+        foreach ($users as $id => $user) {
+            if (!in_array($id, $modified_userid)) {
+                $line = array();
+                $line[] = $id+1;
+                $line[] = $user[$ID_COL]->value;
+                $line[] = $user[$NAME_COL]->value;
+                $table->data[] = $line;
+            }
         }//for
 
         print_table($table);
@@ -244,14 +244,14 @@ foreach ($classes as $class) {
         $post_data_string .= "$key=".$value."&";
     }
     $post_data_string = substr($post_data_string, 0, -1);//去掉最后的&符号
-    // 转为gbk
     $post_data_string = iconv('UTF-8', 'GBK', $post_data_string);
 
     curl_setopt($ch, CURLOPT_POST, TRUE);
-    curl_setopt($ch, CURLOPT_URL, $action_url);
+    curl_setopt($ch, CURLOPT_URL, "http://xscj.hit.edu.cn/hitjwgl/teacher/CJGL/$action_url");
     curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data_string);
 
-    $result = curl_exec($ch);
+    if (curl_exec($ch));
+        echo '导出成功，请到教务处网站确认，然后上交成绩。';
 
     print_box_end();
 }
