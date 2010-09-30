@@ -44,11 +44,12 @@ $links = $t->getElementsByTagName('a');
 $table_src = $table_doc->saveHTML();
 $table_src = preg_replace('/<a href="cjlr_qzsd.asp.+<\/a>/', '', $table_src, -1, $count1);
 $table_src = preg_replace('/cjlr_4.asp\?/', "export.php?id=$id&", $table_src, -1, $count2);
+$table_src = preg_replace('/&#24405;&#20837;/', '&#23548;&#20986;', $table_src, -1, $count3);
 
-if ($count1 && $count2)
+if ($count1 && $count2 && $count3)
     echo $table_src;
 else
-    notice('该学期您没有课程，请重新选择学期。（也可能是教务处网站又变了，请联系管理员修改导出程序）', "xueqi.php?id=$id");
+    notice('该学期您没有课程，请重新选择学期。（也可能是教务处网站有变化，请联系管理员修改导出程序）', "xueqi.php?id=$id");
 
 print_footer($course);
 
