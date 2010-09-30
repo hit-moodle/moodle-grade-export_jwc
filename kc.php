@@ -31,15 +31,25 @@ curl_setopt($ch, CURLOPT_POSTFIELDS, "XQ=$a");
 //获取cjlr_2.asp页面
 $result = curl_exec($ch);
 
-//正则表达式匹配课程信息
-preg_match_all("/<div\salign=\"center\"\sclass=\"style2\">(.+|\s+.+\s+|.+\s+.+)<\/div>/",$result,$matches,PREG_PATTERN_ORDER);
+//取出课程选择表
+$doc = new DOMDocument();
+$doc->loadHTML($result);
+$table = $doc->getElementsByTagName('table')->item(1);
+$table_doc = new DOMDocument('1.0');
+$t = $table_doc->importNode($table, TRUE);
+$table_doc->appendChild($t);
 
-//打印课程信息
-if($matches[0]){
-include("$CFG->dirroot/grade/export/jwc/cjlr_2.html");
-}else{
-	 notice('不是合理的选课时间', "xueqi.php?id=$id");
-}
+//更改链接
+$links = $t->getElementsByTagName('a');
+$table_src = $table_doc->saveHTML();
+print_object($table_src);
+$table_src = preg_replace('/<a href="cjlr_qzsd.asp.+<\/a>/', '', $table_src, -1, $count1);
+$table_src = preg_replace('/cjlr_4.asp\?/', "export.php?id=$id&", $table_src, -1, $count2);
+
+if ($count1 && $count2)
+    echo $table_src;
+else
+    notice('该学期您没有课程，请重新选择学期。（也可能是教务处网站又变了，请联系管理员修改导出程序）', "xueqi.php?id=$id");
 
 print_footer($course);
 
