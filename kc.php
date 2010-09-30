@@ -46,10 +46,12 @@ $table_src = preg_replace('/<a href="cjlr_qzsd.asp.+<\/a>/', '', $table_src, -1,
 $table_src = preg_replace('/cjlr_4.asp\?/', "export.php?id=$id&", $table_src, -1, $count2);
 $table_src = preg_replace('/&#24405;&#20837;/', '&#23548;&#20986;', $table_src, -1, $count3);
 
-if ($count1 && $count2 && $count3)
+if ($count1 && $count2 && $count3) {
+    print_box('如果只导出总成绩，在教务处使用缺省设置，这里点击下面的“导出成绩”即可。<br />如果要导出分项成绩，需要在教务处和本站分别先设好各个成绩项和权重（本站主要使用类别划分成绩项），并保持两边对应的成绩项的名称、权重和分数范围一致，然后点击下面的“导出成绩”。<br />因为本导出程序只是将成绩“保存”到教务处，并不“上交”，所以所有操作都可逆，请放心使用。');
     echo $table_src;
-else
+} else {
     notice('该学期您没有课程，请重新选择学期。（也可能是教务处网站有变化，请联系管理员修改导出程序）', "xueqi.php?id=$id");
+}
 
 print_footer($course);
 
