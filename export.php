@@ -183,7 +183,10 @@ foreach ($classes as $class) {
 
         foreach($userdata->grades as $itemid => $grade) {
             if ($jwc_col_id = array_search($moodle_cols[$itemid]->itemname, $jwc_cols)) {
-                $finalgrade = grade_format_gradevalue($grade->finalgrade, $moodle_cols[$itemid], false, GRADE_DISPLAY_TYPE_REAL, '.');
+                $decimals = 2;
+                if ($moodle_cols[$itemid]->itemname == '总成绩')  // 总成绩四舍五入
+                    $decimals = 0;
+                $finalgrade = grade_format_gradevalue($grade->finalgrade, $moodle_cols[$itemid], true, GRADE_DISPLAY_TYPE_REAL, $decimals);
                 if ($finalgrade != '-') {
                     foreach ($users as $jwcid => $jwc_user) {
                         if ($jwc_user[$NAME_COL]->value == $moodle_user->lastname.$moodle_user->firstname
