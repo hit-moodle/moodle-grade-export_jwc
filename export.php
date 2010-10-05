@@ -235,8 +235,8 @@ foreach ($classes as $class) {
 
                 $pulink = '';
                 foreach ($graded_users as $muser) {
-                    if (trim($muser->lastname).trim($muser->firstname) == $user[$NAME_COL]->value) {
-                        $pulink .= '<a href="' . $CFG->wwwroot . '/user/view.php?id=' . $muser->id . '&amp;course=' . $course->id . '" target="_blank">' . fullname($muser) . '</a> ';
+                    if (like($user[$NAME_COL]->value, $user[$ID_COL]->value, $muser)) {
+                        $pulink .= '<a href="' . $CFG->wwwroot . '/course/user.php?user=' . $muser->id . '&amp;id=' . $course->id . '&amp;mode=grade" target="_blank">' . fullname($muser) . '</a> ';
                     }
                 }
                 $line[] = $pulink;
@@ -289,6 +289,24 @@ print_footer($course);
 function bad_html() {
 //unlink(PATH."/$COURSE->id/cookiefile.txt");
     die('教务处网站有变化，需要更新导出程序。请联系管理员。');
+}
+
+function like($name, $idnumber, $user) {
+    $user->lastname = trim($user->lastname);
+    $user->firstname = trim($user->firstname);
+    if ($user->lastname.$user->firstname == $name) {
+        return true;
+    } else if ($user->firstname.$user->lastname == $name) {
+        return true;
+    } else if ($idnumber == $user->idnumber) {
+        return true;
+    } else if ($user->firstname.'.'.$user->lastname == $name) {
+        return true;
+    } else if ($user->lastname.'.'.$user->firstname == $name) {
+        return true;
+    }
+
+    return false;
 }
 
 ?>
