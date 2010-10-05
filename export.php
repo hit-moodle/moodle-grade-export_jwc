@@ -208,18 +208,39 @@ foreach ($classes as $class) {
     echo '将导出学生数：'.count($modified_userid),'<br />';
     $table = new object();
     if (count($users) > count($modified_userid)) {
-        echo '<b>本站找不到与以下同学匹配的成绩，或该同学在本站的成绩为空，请核实后，手工录入！</b>';
+        // 找到所有有成绩的用户
+        $graded_users = array();
+        $geub = new grade_export_update_buffer();
+        $gui = new graded_users_iterator($course, ($moodle_cols));
+        $gui->init();
+        while ($userdata = $gui->next_user()) {
+            $user = $userdata->user;
+            $graded_users[] = $user;
+        }
+        $gui->close();
+        $geub->close();
+
+        echo '<b>本站找不到与以下同学匹配的成绩。<br />这可能是因为他们在本站注册的学号或姓名有误，或者在本站的成绩为空，或者没有在本站选课。<br />请核实后，<a href="http://xscj.hit.edu.cn/hitjwgl/teacher/log.asp" target="_blank">手工录入</a>！</b>';
         $table->align = array ('left', 'left');//每一列在表格的left or right
         $table->cellpadding = 3;
         $table->width = '0%';
         $table->tablealign = 'left';
-        $table->head = array('序号', '学号', '姓名');
+        $table->head = array('序号', '学号', '姓名', '可能对应');
         foreach ($users as $id => $user) {
             if (!in_array($id, $modified_userid)) {
                 $line = array();
                 $line[] = $id+1;
                 $line[] = $user[$ID_COL]->value;
                 $line[] = $user[$NAME_COL]->value;
+
+                $pulink = '';
+                foreach ($graded_users as $muser) {
+                    if (trim($muser->lastname).trim($muser->firstname) == $user[$NAME_COL]->value) {
+                        $pulink .= '<a href="' . $CFG->wwwroot . '/user/view.php?id=' . $muser->id . '&amp;course=' . $course->id . '" target="_blank">' . fullname($muser) . '</a> ';
+                    }
+                }
+                $line[] = $pulink;
+
                 $table->data[] = $line;
             }
         }//for
