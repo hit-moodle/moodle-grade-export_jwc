@@ -56,7 +56,7 @@ foreach ($class_table->getElementsByTagName('tr') as $i => $tr) {
     $tds = $tr->getElementsByTagName('td');
     $class = new object();
     $class->name = trim($tds->item(1)->getElementsByTagName('div')->item(0)->nodeValue);
-    $class->link = 'http://xscj.hit.edu.cn/hitjwgl/teacher/CJGL/'.$tds->item(4)->getElementsByTagName('a')->item(0)->getAttribute('href');
+    $class->link = 'http://xscj.hit.edu.cn/hitjwgl/teacher/CJGL/'.$tds->item(5)->getElementsByTagName('a')->item(0)->getAttribute('href');
     $classes[] = $class;
 }
 
