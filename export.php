@@ -294,6 +294,7 @@ function bad_html() {
 function like($name, $idnumber, $user) {
     $user->lastname = trim($user->lastname);
     $user->firstname = trim($user->firstname);
+    $user->idnumber = trim($user->idnumber);
     if ($user->lastname.$user->firstname == $name) {
         return true;
     } else if ($user->firstname.$user->lastname == $name) {
