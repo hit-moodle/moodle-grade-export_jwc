@@ -5,6 +5,7 @@ require_once $CFG->dirroot.'/grade/export/lib.php';
 require_once $CFG->dirroot.'/grade/export/jwc/lib.php';
 
 $id = required_param('id', PARAM_INT);   // course
+$realexport = optional_param('realexport', false, PARAM_BOOL);   // course
 
 if (! $course = get_record('course', 'id', $id)) {
     error('Course ID is incorrect');
@@ -18,13 +19,17 @@ if(!file_exists(PATH."/$COURSE->id/cookiefile.txt")) {
 	redirect($CFG->wwwroot . '/grade/export/jwc/index.php?id=' . $id, "登录已过期", 1);
 }
 
+if (!$realexport) {
+    echo '<strong>模拟导出过程，没有真实数据会被送到教务处。</strong><br />';
+}
+
 //提取给jwc的参数
 $nv = array();
 foreach($_GET as $name => $value) {
     if ($name != 'id')
         $nv[] = $name.'='.$value;
 }
-$post_data = iconv('UTF8', 'gbk', implode('&', $nv));
+$jwc_params = implode('&', $nv);
 
        
 //获取教学班次页面       
@@ -37,7 +42,7 @@ curl_setopt($ch, CURLOPT_COOKIEFILE, PATH."/$COURSE->id/cookiefile.txt");
 curl_setopt($ch, CURLOPT_COOKIEJAR, PATH."/$COURSE->id/cookiefile.txt");
 curl_setopt($ch, CURLOPT_POST, TRUE);
 curl_setopt($ch, CURLOPT_URL, "http://xscj.hit.edu.cn/hitjwgl/teacher/CJGL/cjlr_4.asp");//选择教学班次的页面
-curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
+curl_setopt($ch, CURLOPT_POSTFIELDS, iconv('UTF8', 'gbk', $jwc_params));
 
 $result = curl_exec($ch);
 
@@ -68,7 +73,7 @@ foreach ($classes as $class) {
     $modified_userid = array(); // 修改过成绩的用户的jwc id
 
     print_box_start();
-    echo "<br />导出班级：$class->name <br/>";
+    echo "导出班级：$class->name <br/>";
     curl_setopt($ch, CURLOPT_POST, FALSE);
     curl_setopt($ch, CURLOPT_URL, iconv('utf8', 'gbk', $class->link));
     $result = curl_exec($ch);
@@ -226,10 +231,10 @@ foreach ($classes as $class) {
         $table->width = '0%';
         $table->tablealign = 'left';
         $table->head = array('序号', '学号', '姓名', '可能对应');
-        foreach ($users as $id => $user) {
-            if (!in_array($id, $modified_userid)) {
+        foreach ($users as $uid => $user) {
+            if (!in_array($uid, $modified_userid)) {
                 $line = array();
-                $line[] = $id+1;
+                $line[] = $uid+1;
                 $line[] = $user[$ID_COL]->value;
                 $line[] = $user[$NAME_COL]->value;
 
@@ -248,41 +253,45 @@ foreach ($classes as $class) {
         print_table($table);
     }
 
-    // 构造post_data
-    foreach ($users as $user) {
-        foreach ($user as $key => $col) {
-            if ($key != 'modified') {
-                foreach ($col->input as $name => $value) {
-                    $post_data[$name] = $value;
+    if ($realexport) {
+        // 构造post_data
+        foreach ($users as $user) {
+            foreach ($user as $key => $col) {
+                if ($key != 'modified') {
+                    foreach ($col->input as $name => $value) {
+                        $post_data[$name] = $value;
+                    }
                 }
             }
         }
+
+        //---------------------准备完毕，开始传送-------------------
+
+        //curl模拟提交
+        $post_data_string = '';
+
+        foreach($post_data as $key => $value) { 
+            $post_data_string .= "$key=".$value."&";
+        }
+        $post_data_string = substr($post_data_string, 0, -1);//去掉最后的&符号
+        $post_data_string = iconv('UTF-8', 'GBK', $post_data_string);
+
+        curl_setopt($ch, CURLOPT_POST, TRUE);
+        curl_setopt($ch, CURLOPT_URL, "http://xscj.hit.edu.cn/hitjwgl/teacher/CJGL/$action_url");
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data_string);
+
+        if (curl_exec($ch))
+            echo '导出成功，请到教务处网站确认，然后上交成绩。';
+        else
+            echo '导出失败！！！';
+        print_box_end();
+    } else {
+        print_box_end();
+        echo '<strong>模拟导出结束。如果对模拟结果满意，请点击此<a href="export.php?realexport=1&id='.$id.'&'.$jwc_params.'">链接</a>，进行真正的导出。</strong><br />';
     }
 
-    //---------------------准备完毕，开始传送-------------------
-
-    //curl模拟提交
-    $post_data_string = '';
-
-    foreach($post_data as $key => $value) { 
-        $post_data_string .= "$key=".$value."&";
-    }
-    $post_data_string = substr($post_data_string, 0, -1);//去掉最后的&符号
-    $post_data_string = iconv('UTF-8', 'GBK', $post_data_string);
-
-    curl_setopt($ch, CURLOPT_POST, TRUE);
-    curl_setopt($ch, CURLOPT_URL, "http://xscj.hit.edu.cn/hitjwgl/teacher/CJGL/$action_url");
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data_string);
-
-    if (curl_exec($ch))
-        echo '导出成功，请到教务处网站确认，然后上交成绩。';
-    else
-        echo '导出失败！！！';
-
-    print_box_end();
 }
 curl_close($ch);
-
 
 print_footer($course);
 
