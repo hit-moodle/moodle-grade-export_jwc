@@ -284,14 +284,15 @@ foreach ($classes as $class) {
             echo '导出成功，请到教务处网站确认，然后上交成绩。';
         else
             echo '导出失败！！！';
-        print_box_end();
-    } else {
-        print_box_end();
-        echo '<strong>模拟导出结束。如果对模拟结果满意，请点击此<a href="export.php?realexport=1&id='.$id.'&'.$jwc_params.'">链接</a>，进行真正的导出。</strong><br />';
     }
+    print_box_end();
 
 }
 curl_close($ch);
+
+if (!$realexport) {
+    echo '<strong>模拟导出结束。如果对模拟结果满意，请点击此<a href="export.php?realexport=1&id='.$id.'&'.$jwc_params.'">链接</a>，进行真正的导出。</strong><br />';
+}
 
 print_footer($course);
 
