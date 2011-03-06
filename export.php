@@ -225,30 +225,32 @@ foreach ($classes as $class) {
         $gui->close();
         $geub->close();
 
-        echo '<b>本站找不到与以下同学匹配的成绩。<br />这可能是因为他们在本站注册的学号或姓名有误，或者在本站的成绩为空，或者没有在本站选课。<br />请核实后，<a href="http://xscj.hit.edu.cn/hitjwgl/teacher/log.asp" target="_blank">手工录入</a>！</b>';
-        $table->align = array ('left', 'left');//每一列在表格的left or right
-        $table->cellpadding = 3;
-        $table->width = '0%';
-        $table->tablealign = 'left';
-        $table->head = array('序号', '学号', '姓名', '可能对应');
-        foreach ($users as $uid => $user) {
-            if (!in_array($uid, $modified_userid)) {
-                $line = array();
-                $line[] = $uid+1;
-                $line[] = $user[$ID_COL]->value;
-                $line[] = $user[$NAME_COL]->value;
+        if (!empty($users)) {
+            echo '<b>本站找不到与以下同学匹配的成绩。<br />这可能是因为他们在本站注册的学号或姓名有误，或者在本站的成绩为空，或者没有在本站选课。<br />请核实后，<a href="http://xscj.hit.edu.cn/hitjwgl/teacher/log.asp" target="_blank">手工录入</a>！</b>';
+            $table->align = array ('left', 'left');//每一列在表格的left or right
+            $table->cellpadding = 3;
+            $table->width = '0%';
+            $table->tablealign = 'left';
+            $table->head = array('序号', '学号', '姓名', '可能对应');
+            foreach ($users as $uid => $user) {
+                if (!in_array($uid, $modified_userid)) {
+                    $line = array();
+                    $line[] = $uid+1;
+                    $line[] = $user[$ID_COL]->value;
+                    $line[] = $user[$NAME_COL]->value;
 
-                $pulink = '';
-                foreach ($graded_users as $muser) {
-                    if (like($user[$NAME_COL]->value, $user[$ID_COL]->value, $muser)) {
-                        $pulink .= '<a href="' . $CFG->wwwroot . '/course/user.php?user=' . $muser->id . '&amp;id=' . $course->id . '&amp;mode=grade" target="_blank">' . fullname($muser) . '</a> ';
+                    $pulink = '';
+                    foreach ($graded_users as $muser) {
+                        if (like($user[$NAME_COL]->value, $user[$ID_COL]->value, $muser)) {
+                            $pulink .= '<a href="' . $CFG->wwwroot . '/course/user.php?user=' . $muser->id . '&amp;id=' . $course->id . '&amp;mode=grade" target="_blank">' . fullname($muser) . '</a> ';
+                        }
                     }
-                }
-                $line[] = $pulink;
+                    $line[] = $pulink;
 
-                $table->data[] = $line;
-            }
-        }//for
+                    $table->data[] = $line;
+                }
+            }//for
+        }
 
         print_table($table);
     }
