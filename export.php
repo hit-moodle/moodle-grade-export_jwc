@@ -194,7 +194,7 @@ foreach ($classes as $class) {
                 $finalgrade = grade_format_gradevalue($grade->finalgrade, $moodle_cols[$itemid], true, GRADE_DISPLAY_TYPE_REAL, $decimals);
                 if ($finalgrade != '-') {
                     foreach ($users as $jwcid => $jwc_user) {
-                        if ($jwc_user[$NAME_COL]->value == $moodle_user->lastname.$moodle_user->firstname
+                        if ($jwc_user[$NAME_COL]->value == fullname($moodle_user, false, false)
                             && $jwc_user[$ID_COL]->value == $moodle_user->idnumber)
                         {
                             $name = key($jwc_user[$jwc_col_id]->input);
