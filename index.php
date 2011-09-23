@@ -38,5 +38,21 @@ if (!empty($CFG->gradepublishing)) {
     $CFG->gradepublishing = has_capability('gradeexport/jwc:publish', $context);
 }
 
-echo $OUTPUT->footer();
+$output = $PAGE->get_renderer('gradeexport_jwc');
+
+// CAS用户？
+if ($USER->auth != 'cas') {
+    echo $output->require_cas();
+    echo $output->footer();
+    die;
+}
+
+// 课程编号是否存在
+if (empty($course->idnumber)) {
+    echo $output->require_idnumber($course->id);
+    echo $output->footer();
+    die;
+}
+
+echo $output->footer();
 
