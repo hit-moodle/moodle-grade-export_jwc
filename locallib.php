@@ -67,6 +67,13 @@ class jwc_manager {
     function get_courses($jwcid) {
         return array('08T1031050' => '操作系统', '111111' => 'C语言');
     }
+
+    /**
+     * 用户是否可以更新该课程的成绩
+     */
+    function can_update_course($jwcid, $idnumber) {
+        return true;
+    }
 }
 
 /**
