@@ -48,10 +48,16 @@ if ($USER->auth != 'cas') {
     die;
 }
 
+$jwc = get_jwc_instance();
+
 // 设置教师编号
 $jwcid = $DB->get_field('grade_export_jwc', 'jwcid', array('userid' => $USER->id));
-if (!$jwcid) {
-    $form = new setup_jwcid_form(new moodle_url('/grade/export/jwc/index.php', array('id' =>$id)));
+if (!$jwcid or !$jwc->auth_user($USER, $jwcid)) {
+    $form = new setup_jwcid_form(new moodle_url('/grade/export/jwc/index.php', array('id' =>$id)), array($USER));
+    if ($jwcid) {
+        echo $output->notification('教师编号有误，请重新设置');
+        $form->set_data(array('jwcid' => $jwcid));
+    }
     if ($data = $form->get_data()) {
         $jwcid = $data->jwcid;
         $data->userid = $USER->id;

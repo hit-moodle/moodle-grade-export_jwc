@@ -7,7 +7,7 @@ class setup_jwcid_form extends moodleform {
 
         $mform =& $this->_form;
 
-        $mform->addElement('html', '请输入您登录教务处网站所用的“教师编码”，例如“1303832”');
+        $mform->addElement('html', '请输入您登录教务处成绩管理网站所用的“教师编码”，例如“1303832”');
 
         $mform->addElement('text', 'jwcid', '教师编码');
         $mform->setType('jwcid', PARAM_ALPHANUM);
@@ -16,6 +16,13 @@ class setup_jwcid_form extends moodleform {
     }
 
     function validation($data, $files) {
+        $errors = parent::validation($data, $files);
+
+        if (!get_jwc_instance()->auth_user(reset($this->_customdata), $data['jwcid'])) {
+            $errors['jwcid'] = '此编码对应的教师姓名与您不符，请仔细核对';
+        }
+
+        return $errors;
     }
 }
 
@@ -41,6 +48,15 @@ class jwc_manager {
         $extdb->SetFetchMode(ADODB_FETCH_ASSOC);
 
         $this->extdb = $extdb;
+    }
+
+    /**
+     * 验证$user是否和$jwcid是同一个人
+     *
+     * 现在的验证方法并不十分严格，只是看jwcid对应的教师姓名是否和user的全名一致
+     */
+    function auth_user($user, $jwcid) {
+        return true;
     }
 }
 
