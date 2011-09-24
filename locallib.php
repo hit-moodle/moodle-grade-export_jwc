@@ -58,6 +58,15 @@ class jwc_manager {
     function auth_user($user, $jwcid) {
         return true;
     }
+
+    /**
+     * 返回jwcid承担的课程
+     *
+     * return array('course_idnumber' => 'course name' .....)
+     */
+    function get_courses($jwcid) {
+        return array('08T1031050' => '操作系统', '111111' => 'C语言');
+    }
 }
 
 /**

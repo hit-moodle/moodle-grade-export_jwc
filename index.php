@@ -71,7 +71,8 @@ if (!$jwcid or !$jwc->auth_user($USER, $jwcid)) {
 
 // 课程编号是否存在
 if (empty($course->idnumber)) {
-    echo $output->require_idnumber($course->id);
+    $current_courses = $jwc->get_courses($jwcid);
+    echo $output->require_idnumber($course->id, $current_courses);
     echo $output->footer();
     die;
 }
