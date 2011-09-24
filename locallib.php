@@ -64,7 +64,7 @@ class jwc_manager {
     }
 
     function set_course($course) {
-        if (empty($course->idnumber) or !$jwc->can_update_course($jwcid, $course->idnumber)) {
+        if (empty($course->idnumber) or !$this->can_update_course($this->jwcid, $course->idnumber)) {
             return false;
         } else {
             $this->course = $course;
