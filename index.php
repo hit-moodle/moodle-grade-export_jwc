@@ -52,7 +52,7 @@ $jwc = get_jwc_instance();
 
 // 设置教师编号
 $jwcid = $DB->get_field('grade_export_jwc', 'jwcid', array('userid' => $USER->id));
-if (!$jwcid or !$jwc->auth_user($USER, $jwcid)) {
+if (!$jwcid or !$jwc->set_user($USER, $jwcid)) {
     $form = new setup_jwcid_form(new moodle_url('/grade/export/jwc/index.php', array('id' =>$id)), array($USER));
     if ($jwcid) {
         echo $output->notification('教师编号有误，请重新设置');
@@ -70,8 +70,8 @@ if (!$jwcid or !$jwc->auth_user($USER, $jwcid)) {
 }
 
 // 课程编号是否存在
-if (empty($course->idnumber) or !$jwc->can_update_course($jwcid, $course->idnumber)) {
-    $current_courses = $jwc->get_courses($jwcid);
+if (!$jwc->set_course($course)) {
+    $current_courses = $jwc->get_courses();
     echo $output->require_idnumber($course->id, $current_courses);
     echo $output->footer();
     die;

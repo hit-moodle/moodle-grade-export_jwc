@@ -31,6 +31,9 @@ class setup_jwcid_form extends moodleform {
  */
 class jwc_manager {
     protected $extdb;
+    protected $jwcid;
+    protected $user;
+    protected $course;
 
     function __construct() {
         global $CFG;
@@ -50,6 +53,25 @@ class jwc_manager {
         $this->extdb = $extdb;
     }
 
+    function set_user($user, $jwcid) {
+        if ($this->auth_user($user, $jwcid)) {
+            $this->user = $user;
+            $this->jwcid = $jwcid;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function set_course($course) {
+        if (empty($course->idnumber) or !$jwc->can_update_course($jwcid, $course->idnumber)) {
+            return false;
+        } else {
+            $this->course = $course;
+            return true;
+        }
+    }
+
     /**
      * 验证$user是否和$jwcid是同一个人
      *
@@ -64,7 +86,7 @@ class jwc_manager {
      *
      * return array('course_idnumber' => 'course name' .....)
      */
-    function get_courses($jwcid) {
+    function get_courses() {
         return array('08T1031050' => '操作系统', '111111' => 'C语言');
     }
 
