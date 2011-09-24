@@ -17,6 +17,7 @@
 
 require_once '../../../config.php';
 require_once $CFG->dirroot.'/grade/export/lib.php';
+require_once $CFG->dirroot.'/grade/export/jwc/locallib.php';
 
 $id = required_param('id', PARAM_INT); // course id
 
@@ -45,6 +46,21 @@ if ($USER->auth != 'cas') {
     echo $output->require_cas();
     echo $output->footer();
     die;
+}
+
+// 设置教师编号
+$jwcid = $DB->get_field('grade_export_jwc', 'jwcid', array('userid' => $USER->id));
+if (!$jwcid) {
+    $form = new setup_jwcid_form(new moodle_url('/grade/export/jwc/index.php', array('id' =>$id)));
+    if ($data = $form->get_data()) {
+        $jwcid = $data->jwcid;
+        $data->userid = $USER->id;
+        $DB->insert_record('grade_export_jwc', $data);
+    } else {
+        $form->display();
+        echo $output->footer();
+        die;
+    }
 }
 
 // 课程编号是否存在
