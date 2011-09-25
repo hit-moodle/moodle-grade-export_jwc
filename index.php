@@ -77,39 +77,64 @@ if (!$jwc->set_course($course)) {
     die;
 }
 
-//first make sure we have proper final grades - this must be done before constructing of the grade tree
-grade_regrade_final_grades($course->id);
-
-// 得到最上层的分类和成绩项信息
-$tree = new grade_tree($course->id, true, true);
-$tops = $tree->top_element['children'];
-foreach ($tops as $top) {
-    $children = end($top['children']);
-    $grade_item = $children['object'];
-    if ($grade_item->itemtype == 'course') {
-        $grade_item->itemname = '总成绩';
-    } else if ($grade_item->itemtype == 'category') {
-        //用类别名做成绩名
-        $grade_item->itemname = $top['object']->fullname;
-    }
-    $moodle_cols[$grade_item->id] = $grade_item;
-}
-echo '本站顶级成绩项：';
-$names = array();
-foreach ($moodle_cols as $col) {
-    $names[] = $col->itemname;
-}
-echo implode('，', $names).'<br />';
-
-// 用户成绩
-$geub = new grade_export_update_buffer();
-$gui = new graded_users_iterator($course, ($moodle_cols));
-$gui->init();
-
-while ($userdata = $gui->next_user()) {
-    foreach($userdata->grades as $itemid => $grade) {
-    }
+// 选择导出方式
+$action = optional_param('action', '', PARAM_ACTION);
+if (empty($action)) {
+    echo $output->choose_export_method();
+} else {
+    $confirmed = optional_param('confirmed', 0, PARAM_BOOL);
+    export_to_jwc($action == 'all', !$confirmed);
 }
 
 echo $output->footer();
+// die here
 
+function export_to_jwc($include_cats = false, $dryrun = true) {
+    global $course, $output;
+
+    if ($include_cats) {
+        echo $output->heading('导出分项成绩及总分到教务处');
+    } else {
+        echo $output->heading('导出总分到教务处');
+    }
+
+    //first make sure we have proper final grades - this must be done before constructing of the grade tree
+    grade_regrade_final_grades($course->id);
+
+    // 得到最上层的分类和成绩项信息
+    $tree = new grade_tree($course->id, true, true);
+    $tops = $tree->top_element['children'];
+    foreach ($tops as $top) {
+        $children = end($top['children']);
+        $grade_item = $children['object'];
+
+        if (!$include_cats and $grade_item->itemtype != 'course') {
+            continue;
+        }
+
+        if ($grade_item->itemtype == 'course') {
+            $grade_item->itemname = '总成绩';
+        } else if ($grade_item->itemtype == 'category') {
+            //用类别名做成绩名
+            $grade_item->itemname = $top['object']->fullname;
+        }
+
+        $moodle_cols[$grade_item->id] = $grade_item;
+    }
+    echo '本站顶级成绩项：';
+    $names = array();
+    foreach ($moodle_cols as $col) {
+        $names[] = $col->itemname;
+    }
+    echo implode('，', $names).'<br />';
+
+    // 用户成绩
+    $geub = new grade_export_update_buffer();
+    $gui = new graded_users_iterator($course, ($moodle_cols));
+    $gui->init();
+
+    while ($userdata = $gui->next_user()) {
+        foreach($userdata->grades as $itemid => $grade) {
+        }
+    }
+}
