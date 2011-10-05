@@ -23,6 +23,24 @@ class gradeexport_jwc_renderer extends plugin_renderer_base {
         return $this->notification('为了安全，只有使用HITID登录的用户才能使用此功能。');
     }
 
+    public function require_aggregation($courseid, $agg) {
+        $aggnames = array(GRADE_AGGREGATE_MEAN             => get_string('aggregatemean', 'grades'),
+            GRADE_AGGREGATE_WEIGHTED_MEAN    => get_string('aggregateweightedmean', 'grades'),
+            GRADE_AGGREGATE_WEIGHTED_MEAN2   => get_string('aggregateweightedmean2', 'grades'),
+            GRADE_AGGREGATE_EXTRACREDIT_MEAN => get_string('aggregateextracreditmean', 'grades'),
+            GRADE_AGGREGATE_MEDIAN           => get_string('aggregatemedian', 'grades'),
+            GRADE_AGGREGATE_MIN              => get_string('aggregatemin', 'grades'),
+            GRADE_AGGREGATE_MAX              => get_string('aggregatemax', 'grades'),
+            GRADE_AGGREGATE_MODE             => get_string('aggregatemode', 'grades'),
+            GRADE_AGGREGATE_SUM              => get_string('aggregatesum', 'grades'));
+        $output = html_writer::tag('p',
+                    '总成绩的汇总算法必须是“<strong>'.$aggnames[GRADE_AGGREGATE_WEIGHTED_MEAN2].'</strong>”才能与教务处兼容。而您使用的是“'.$aggnames[$agg].'”。');
+        $url = new moodle_url('/grade/edit/tree/index.php', array('sesskey' => sesskey(), 'showadvanced' => 1, 'id' => $courseid));
+        $output .= html_writer::tag('p', html_writer::link($url, '点击此处设定成绩汇总算法'));
+
+        return $this->notification($output);
+    }
+
     public function choose_export_method() {
         global $PAGE;
 

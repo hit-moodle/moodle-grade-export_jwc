@@ -101,8 +101,18 @@ function export_to_jwc($include_cats = false, $dryrun = true) {
     //first make sure we have proper final grades - this must be done before constructing of the grade tree
     grade_regrade_final_grades($course->id);
 
-    // 得到最上层的分类和成绩项信息
+    // 获得成绩类别和项信息
     $tree = new grade_tree($course->id, true, true);
+
+    // 总成绩算法必须是“简单加权平均分”
+    $total_aggregation = $tree->top_element['object']->aggregation;
+    if ($total_aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN2) {
+        echo $output->require_aggregation($course->id, $total_aggregation);
+        echo $output->footer();
+        die;
+    }
+
+    // 处理顶级成绩项
     $tops = $tree->top_element['children'];
     foreach ($tops as $top) {
         $children = end($top['children']);
