@@ -50,6 +50,15 @@ class gradeexport_jwc_renderer extends plugin_renderer_base {
         return $this->notification($output);
     }
 
+    public function require_100_weight($courseid, $current_weight) {
+        $output = html_writer::tag('p',
+                    '所有分项成绩的权重之和必须是“<strong>100%</strong>”才能与教务处兼容。而您设定的是“'.$current_weight.'%”。');
+        $url = new moodle_url('/grade/edit/tree/index.php', array('sesskey' => sesskey(), 'showadvanced' => 0, 'id' => $courseid));
+        $output .= html_writer::tag('p', html_writer::link($url, '点击此处修改各分项成绩的权重'));
+
+        return $this->notification($output);
+    }
+
     public function choose_export_method() {
         global $PAGE;
 

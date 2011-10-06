@@ -126,16 +126,14 @@ function export_to_jwc($include_cats = false, $dryrun = true) {
     $total_aggregation = $tree->top_element['object']->aggregation;
     if ($total_aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN2) {
         echo $output->require_aggregation($course->id, $total_aggregation);
-        echo $output->footer();
-        die;
+        return false;
     }
 
     // 总成绩满分必须是100分
     $total_grademax = (int)$tree->top_element['object']->grade_item->grademax;
     if ($total_grademax != 100) {
         echo $output->require_100_maxgrade($course->id, $total_grademax);
-        echo $output->footer();
-        die;
+        return false;
     }
 
     // 处理顶级成绩项
@@ -168,6 +166,7 @@ function export_to_jwc($include_cats = false, $dryrun = true) {
     echo $output->box_start();
 
     echo '导出成绩项如下：';
+    $weight_sum = 0;
     $itemtable = new html_table();
     $itemtable->head = array('成绩分项名称', '权重', '加分');
     foreach ($items as $item) {
@@ -175,10 +174,21 @@ function export_to_jwc($include_cats = false, $dryrun = true) {
             $extracredit = '-';
         } else {
             $extracredit = $item->aggregationcoef ? '是' : '否';
+            if ($extracredit == '否') {
+                $weight_sum += $item->grademax;
+            }
         }
-        $itemtable->data[] = new html_table_row(array($item->itemname, $item->grademax, $extracredit));
+        $itemtable->data[] = new html_table_row(array($item->itemname, $item->grademax.'%', $extracredit));
     }
     echo html_writer::table($itemtable);
+
+    // 检验权重设置是否合法
+    // 所有非加分的分项相加为100，才合法，除非不包含子类别
+    if ($include_cats and $weight_sum != 100 ) {
+        echo $output->require_100_weight($course->id, $weight_sum);
+        echo $output->box_end();
+        return false;
+    }
 
     // 导出权重
     if (!$jwc->export_weights($items)) {
