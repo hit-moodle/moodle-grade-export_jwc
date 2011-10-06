@@ -97,6 +97,10 @@ class jwc_manager {
     function can_update_course($jwcid, $idnumber) {
         return true;
     }
+
+    function export_weights(array $items) {
+        return true;
+    }
 }
 
 /**

@@ -91,22 +91,22 @@ if ($dryrun) {
     echo $output->notification('现在是模拟运行，不会改写教务处数据库');
 }
 
-export_to_jwc($action == 'all', $dryrun);
-
-if ($dryrun) {
-    echo $output->notification('模拟运行结束，未发现问题。如果您对上面信息没有异议，请点击下面的按钮，正式将数据导出。');
-    $url = $PAGE->url;
-    $url->params(array('action' => $action, 'confirmed' => 1));
-    echo $output->single_button($url, '将成绩导出到教务处');
-} else {
-    echo $output->success();
+if (export_to_jwc($action == 'all', $dryrun)) {
+    if ($dryrun) {
+        echo $output->notification('模拟运行结束，未发现问题。如果您对上面信息没有异议，请点击下面的按钮，正式将数据导出。');
+        $url = $PAGE->url;
+        $url->params(array('action' => $action, 'confirmed' => 1));
+        echo $output->single_button($url, '将成绩导出到教务处');
+    } else {
+        echo $output->success();
+    }
 }
 
 echo $output->footer();
 // die here
 
 function export_to_jwc($include_cats = false, $dryrun = true) {
-    global $course, $output, $PAGE;
+    global $course, $output, $jwc;
 
     $jwc->dryrun = $dryrun;
 
@@ -132,6 +132,7 @@ function export_to_jwc($include_cats = false, $dryrun = true) {
 
     // 处理顶级成绩项
     $tops = $tree->top_element['children'];
+    $items = array();
     foreach ($tops as $top) {
         $children = end($top['children']);
         $grade_item = $children['object'];
@@ -147,21 +148,40 @@ function export_to_jwc($include_cats = false, $dryrun = true) {
             $grade_item->itemname = $top['object']->fullname;
         }
 
-        $moodle_cols[$grade_item->id] = $grade_item;
+        if ($grade_item->grademax > 0) { //ignore 0 max grade items
+            // 整理数据
+            $grade_item->grademax = (int)$grade_item->grademax;
+            $grade_item->aggregationcoef = (int)$grade_item->aggregationcoef;
+
+            $items[$grade_item->id] = $grade_item;
+        }
     }
 
     echo $output->box_start();
 
-    echo '本站顶级成绩项：';
-    $names = array();
-    foreach ($moodle_cols as $col) {
-        $names[] = $col->itemname;
+    echo '导出成绩项如下：';
+    $itemtable = new html_table();
+    $itemtable->head = array('成绩分项名称', '权重', '加分');
+    foreach ($items as $item) {
+        if ($item->itemtype == 'course') {
+            $extracredit = '-';
+        } else {
+            $extracredit = $item->aggregationcoef ? '是' : '否';
+        }
+        $itemtable->data[] = new html_table_row(array($item->itemname, $item->grademax, $extracredit));
     }
-    echo implode('，', $names).'<br />';
+    echo html_writer::table($itemtable);
+
+    // 导出权重
+    if (!$jwc->export_weights($items)) {
+        echo $output->error_text('成绩项导出出错！');
+        echo $output->box_end();
+        return false;
+    }
 
     // 用户成绩
     $geub = new grade_export_update_buffer();
-    $gui = new graded_users_iterator($course, ($moodle_cols));
+    $gui = new graded_users_iterator($course, $items);
     $gui->init();
 
     while ($userdata = $gui->next_user()) {
@@ -171,4 +191,5 @@ function export_to_jwc($include_cats = false, $dryrun = true) {
 
     echo $output->box_end();
 
+    return true;
 }
