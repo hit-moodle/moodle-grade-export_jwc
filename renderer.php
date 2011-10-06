@@ -41,6 +41,15 @@ class gradeexport_jwc_renderer extends plugin_renderer_base {
         return $this->notification($output);
     }
 
+    public function require_100_maxgrade($courseid, $current_maxgrade) {
+        $output = html_writer::tag('p',
+                    '总成绩的满分必须是“<strong>100</strong>”才能与教务处兼容。而您设定的是“'.$current_maxgrade.'”。');
+        $url = new moodle_url('/grade/edit/tree/index.php', array('sesskey' => sesskey(), 'showadvanced' => 0, 'id' => $courseid));
+        $output .= html_writer::tag('p', html_writer::link($url, '点击此处设定总成绩的满分'));
+
+        return $this->notification($output);
+    }
+
     public function choose_export_method() {
         global $PAGE;
 

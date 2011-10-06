@@ -130,6 +130,14 @@ function export_to_jwc($include_cats = false, $dryrun = true) {
         die;
     }
 
+    // 总成绩满分必须是100分
+    $total_grademax = (int)$tree->top_element['object']->grade_item->grademax;
+    if ($total_grademax != 100) {
+        echo $output->require_100_maxgrade($course->id, $total_grademax);
+        echo $output->footer();
+        die;
+    }
+
     // 处理顶级成绩项
     $tops = $tree->top_element['children'];
     $items = array();
@@ -149,7 +157,7 @@ function export_to_jwc($include_cats = false, $dryrun = true) {
         }
 
         if ($grade_item->grademax > 0) { //ignore 0 max grade items
-            // 整理数据
+            // 整理数据为整数，方便后面使用
             $grade_item->grademax = (int)$grade_item->grademax;
             $grade_item->aggregationcoef = (int)$grade_item->aggregationcoef;
 
