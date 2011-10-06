@@ -20,6 +20,8 @@ require_once $CFG->dirroot.'/grade/export/lib.php';
 require_once $CFG->dirroot.'/grade/export/jwc/locallib.php';
 
 $id = required_param('id', PARAM_INT); // course id
+$action = optional_param('action', '', PARAM_ACTION);
+$confirmed = optional_param('confirmed', 0, PARAM_BOOL);
 
 $PAGE->set_url('/grade/export/jwc/index.php', array('id'=>$id));
 
@@ -78,19 +80,35 @@ if (!$jwc->set_course($course)) {
 }
 
 // 选择导出方式
-$action = optional_param('action', '', PARAM_ACTION);
 if (empty($action)) {
     echo $output->choose_export_method();
+    echo $output->footer();
+    die;
+}
+
+$dryrun = !$confirmed;
+if ($dryrun) {
+    echo $output->notification('现在是模拟运行，不会改写教务处数据库');
+}
+
+export_to_jwc($action == 'all', $dryrun);
+
+if ($dryrun) {
+    echo $output->notification('模拟运行结束，未发现问题。如果您对上面信息没有异议，请点击下面的按钮，正式将数据导出。');
+    $url = $PAGE->url;
+    $url->params(array('action' => $action, 'confirmed' => 1));
+    echo $output->single_button($url, '将成绩导出到教务处');
 } else {
-    $confirmed = optional_param('confirmed', 0, PARAM_BOOL);
-    export_to_jwc($action == 'all', !$confirmed);
+    echo $output->success();
 }
 
 echo $output->footer();
 // die here
 
 function export_to_jwc($include_cats = false, $dryrun = true) {
-    global $course, $output;
+    global $course, $output, $PAGE;
+
+    $jwc->dryrun = $dryrun;
 
     if ($include_cats) {
         echo $output->heading('导出分项成绩及总分到教务处');
@@ -131,6 +149,9 @@ function export_to_jwc($include_cats = false, $dryrun = true) {
 
         $moodle_cols[$grade_item->id] = $grade_item;
     }
+
+    echo $output->box_start();
+
     echo '本站顶级成绩项：';
     $names = array();
     foreach ($moodle_cols as $col) {
@@ -147,4 +168,7 @@ function export_to_jwc($include_cats = false, $dryrun = true) {
         foreach($userdata->grades as $itemid => $grade) {
         }
     }
+
+    echo $output->box_end();
+
 }

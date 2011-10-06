@@ -34,6 +34,7 @@ class jwc_manager {
     protected $jwcid;
     protected $user;
     protected $course;
+    public $dryrun = true;
 
     function __construct() {
         global $CFG;
