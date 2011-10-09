@@ -88,9 +88,6 @@ function generate_jwc_xml($include_cats = false) {
 
     // 获得成绩类别和项信息
     $tree = new grade_tree($course->id, true, true);
-    $grade_items = grade_item::fetch_all(array('courseid'=>$this->course->id));
-    print_object($grade_items);
-    die;
 
     // 获取所有有效顶级成绩项，并整理数据
     $total_item = null;
@@ -199,7 +196,7 @@ function generate_jwc_xml($include_cats = false) {
 
     // 用户成绩
     echo '导出成绩如下：';
-    $items = array_merge($sub_items, $extra_items);
+    $items = $sub_items + $extra_items;
     $items[$total_item->id] = $total_item;
     $geub = new grade_export_update_buffer();
     $gui = new graded_users_iterator($course, ($items));
@@ -223,8 +220,6 @@ function generate_jwc_xml($include_cats = false) {
         $row[] = new html_table_cell($user->idnumber);
 
         $grades = array();
-        print_object($userdata->grades);
-        die;
         foreach ($userdata->grades as $itemid => $grade) {
             //$finalgrade = grade_format_gradevalue($grade->finalgrade, $items[$itemid], true, GRADE_DISPLAY_TYPE_REAL);
             $finalgrade = $grade->finalgrade;
