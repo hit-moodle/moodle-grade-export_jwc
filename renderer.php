@@ -73,8 +73,13 @@ class gradeexport_jwc_renderer extends plugin_renderer_base {
         return $output;
     }
 
-    public function success() {
+    public function success($key) {
         $link = html_writer::link('http://xscj.hit.edu.cn/hitjwgl/teacher/log.asp', '登录教务处');
-        return '成绩上传成功。请'.$link.'检查确认和最后提交。';
+        $output = html_writer::tag('p', '如果上述信息正确，请拷贝下面的链接地址，然后'.$link.'，粘贴到……');
+
+        $url = new moodle_url('/grade/export/jwc/index.php', array('key' => $key));
+        $output .= html_writer::tag('input', '', array('type' => 'text', 'size' => '120', 'value' => $url, 'readonly' => 'readonly'));
+
+        return $output;
     }
 }

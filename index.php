@@ -21,10 +21,24 @@ require_once $CFG->dirroot.'/grade/export/lib.php';
 define('MAX_SUB_GRADE_COUNT', 8);
 define('MAX_EXTRA_SUB_GRADE_COUNT', 2);
 define('MAX_TOTAL_GRADE', 100);
+define('KEY_EXPIRED_TIME', 300);
+
+$key = optional_param('key', 0, PARAM_ALPHANUM);
+
+if ($key) {
+    // print xml
+    $obj = $DB->get_record('grade_export_jwc', array('requestkey' => $key));
+    if ($obj) {
+        header('Content-type: application/xhtml+xml; charset=utf-8');
+        echo $obj->xml;
+    } else {
+        echo '请求码无效或已过期';
+    }
+    die;
+}
 
 $id = required_param('id', PARAM_INT); // course id
 $action = optional_param('action', '', PARAM_ACTION);
-$key = optional_param('key', 0, PARAM_ALPHANUM);
 
 $PAGE->set_url('/grade/export/jwc/index.php', array('id'=>$id));
 
@@ -61,7 +75,7 @@ echo $output->footer();
 // die here
 
 function generate_jwc_xml($include_cats = false) {
-    global $course, $output, $jwc;
+    global $course, $output, $jwc, $DB;
 
     if ($include_cats) {
         echo $output->heading('导出分项成绩及总分到教务处');
@@ -161,7 +175,7 @@ function generate_jwc_xml($include_cats = false) {
 
     $xml = new gradebook_xml();
 
-    echo '导出成绩项如下：';
+    echo '导出成绩项权重如下：';
     $itemtable = new html_table();
     $itemtable->head = array('成绩分项名称', '权重', '加分');
     foreach ($sub_items as $item) {
@@ -181,12 +195,18 @@ function generate_jwc_xml($include_cats = false) {
     echo html_writer::table($itemtable);
 
     // 用户成绩
+    echo '导出成绩如下：';
     $items = array_merge($sub_items, $extra_items);
     $items[$total_item->id] = $total_item;
     $geub = new grade_export_update_buffer();
     $gui = new graded_users_iterator($course, $items);
     $gui->init();
 
+    $usertable = new html_table();
+    $usertable->head = array('姓名', '学号');
+    foreach ($items as $item) {
+        $usertable->head[] = $item->itemname;
+    }
     while ($userdata = $gui->next_user()) {
         $user = $userdata->user;
 
@@ -195,10 +215,15 @@ function generate_jwc_xml($include_cats = false) {
             continue;
         }
 
+        $row = array();
+        $row[] = new html_table_cell($user->firstname);
+        $row[] = new html_table_cell($user->idnumber);
+
         $grades = array();
         foreach ($userdata->grades as $itemid => $grade) {
             //$finalgrade = grade_format_gradevalue($grade->finalgrade, $items[$itemid], true, GRADE_DISPLAY_TYPE_REAL);
             $finalgrade = $grade->finalgrade;
+            $row[] = new html_table_cell($finalgrade);
             if ($itemid != $total_item->id) {
                 $grades[$itemid] = $finalgrade;
             } else {
@@ -206,14 +231,27 @@ function generate_jwc_xml($include_cats = false) {
             }
         }
         $xml->add_user($user->idnumber, $user->firstname, $grades);
+        $usertable->data[] = new html_table_row($row);
     }
     $gui->close();
     $geub->close();
+    echo html_writer::table($usertable);
 
     echo $output->box_end();
 
-    echo $xml->saveXML();
-    return true;
+    // 存入数据库
+    $new = new stdClass();
+    $new->xml = $xml->saveXML();
+    $new->requestkey = md5($new->xml);
+    $new->expiredtime = time();
+    if ($old = $DB->get_record('grade_export_jwc', array('requestkey' => $new->requestkey))) {
+        $old->expiredtime = time() + KEY_EXPIRED_TIME;
+        $DB->update_record('grade_export_jwc', $old);
+    } else {
+        $DB->insert_record('grade_export_jwc', $new);
+    }
+
+    return $new->requestkey;
 }
 
 class gradebook_xml extends DOMDocument {
