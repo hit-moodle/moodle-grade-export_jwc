@@ -181,18 +181,38 @@ function generate_jwc_xml($include_cats = false) {
     echo html_writer::table($itemtable);
 
     // 用户成绩
+    $items = array_merge($sub_items, $extra_items);
+    $items[$total_item->id] = $total_item;
     $geub = new grade_export_update_buffer();
     $gui = new graded_users_iterator($course, $items);
     $gui->init();
 
     while ($userdata = $gui->next_user()) {
-        foreach($userdata->grades as $itemid => $grade) {
+        $user = $userdata->user;
+
+        if ($user->auth != 'cas' || empty($user->idnumber)) {
+            // 非cas用户成绩不可导出
+            continue;
         }
+
+        $grades = array();
+        foreach ($userdata->grades as $itemid => $grade) {
+            //$finalgrade = grade_format_gradevalue($grade->finalgrade, $items[$itemid], true, GRADE_DISPLAY_TYPE_REAL);
+            $finalgrade = $grade->finalgrade;
+            if ($itemid != $total_item->id) {
+                $grades[$itemid] = $finalgrade;
+            } else {
+                $grades[0] = $finalgrade;
+            }
+        }
+        $xml->add_user($user->idnumber, $user->firstname, $grades);
     }
+    $gui->close();
+    $geub->close();
 
     echo $output->box_end();
 
-    echo htmlentities($xml->saveXML());
+    echo $xml->saveXML();
     return true;
 }
 
@@ -231,6 +251,22 @@ class gradebook_xml extends DOMDocument {
             $node->setAttribute('maxgrade', 0);
             $node->setAttribute('extra', $extra);
             $this->weights->appendChild($node);
+        }
+    }
+
+    public function add_user($idnumber, $name, array $grades) {
+        $node = $this->createElement('user');
+        $node->setAttribute('idnumber', $idnumber);
+        $node->setAttribute('name', $name);
+        $user_node = $this->grades->appendChild($node);
+        foreach ($grades as $itemid => $grade) {
+            if ($itemid != 0) {
+                $node = $this->createElement('grade', $grade);
+                $node->setAttribute('itemid', $itemid);
+            } else {
+                $node = $this->createElement('total', $grade);
+            }
+            $user_node->appendChild($node);
         }
     }
 }
