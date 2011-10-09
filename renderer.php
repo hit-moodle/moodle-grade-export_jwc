@@ -49,7 +49,7 @@ class gradeexport_jwc_renderer extends plugin_renderer_base {
         if ($courseid == 0) {
             $courseid = $COURSE->id;
         }
-        $url = new moodle_url('/grade/edit/tree/index.php', array('sesskey' => sesskey(), 'showadvanced' => 0, 'id' => $courseid));
+        $url = new moodle_url('/grade/edit/tree/index.php', array('sesskey' => sesskey(), 'showadvanced' => 1, 'id' => $courseid));
         return $this->notification(html_writer::tag('p', html_writer::link($url, '点击此处修改成绩设置')));
     }
 
