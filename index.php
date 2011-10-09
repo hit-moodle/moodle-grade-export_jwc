@@ -271,9 +271,8 @@ class gradebook_xml extends DOMDocument {
     }
 
     public function add_weight_item($id, $name, $weight, $maxgrade, $extra=false) {
-        $node = $this->createElement('item');
+        $node = $this->createElement('item', $name);
         $node->setAttribute('id', $id);
-        $node->setAttribute('name', $name);
         $node->setAttribute('weight', $maxgrade);
         $node->setAttribute('maxgrade', $maxgrade);
         $node->setAttribute('extra', $extra);
@@ -282,9 +281,8 @@ class gradebook_xml extends DOMDocument {
 
     public function add_empty_weight_item($count, $extra=false) {
         for ($i=0; $i<$count; $i++) {
-            $node = $this->createElement('item');
+            $node = $this->createElement('item', '');
             $node->setAttribute('id', 0);
-            $node->setAttribute('name', '');
             $node->setAttribute('weight', 0);
             $node->setAttribute('maxgrade', 0);
             $node->setAttribute('extra', $extra);
@@ -293,9 +291,8 @@ class gradebook_xml extends DOMDocument {
     }
 
     public function add_user($idnumber, $name, array $grades) {
-        $node = $this->createElement('user');
+        $node = $this->createElement('user', $name);
         $node->setAttribute('idnumber', $idnumber);
-        $node->setAttribute('name', $name);
         $user_node = $this->grades->appendChild($node);
         foreach ($grades as $itemid => $grade) {
             if ($itemid != 0) {
