@@ -18,9 +18,13 @@
 require_once '../../../config.php';
 require_once $CFG->dirroot.'/grade/export/lib.php';
 
+define('MAX_SUB_GRADE_COUNT', 8);
+define('MAX_EXTRA_SUB_GRADE_COUNT', 2);
+define('MAX_TOTAL_GRADE', 100);
+
 $id = required_param('id', PARAM_INT); // course id
 $action = optional_param('action', '', PARAM_ACTION);
-$confirmed = optional_param('confirmed', 0, PARAM_BOOL);
+$key = optional_param('key', 0, PARAM_ALPHANUM);
 
 $PAGE->set_url('/grade/export/jwc/index.php', array('id'=>$id));
 
@@ -49,29 +53,15 @@ if (empty($action)) {
     die;
 }
 
-$dryrun = !$confirmed;
-if ($dryrun) {
-    echo $output->notification('现在是模拟运行，不会改写教务处数据库');
-}
-
-if (export_to_jwc($action == 'all', $dryrun)) {
-    if ($dryrun) {
-        echo $output->notification('模拟运行结束，未发现问题。如果您对上面信息没有异议，请点击下面的按钮，正式将数据导出。');
-        $url = $PAGE->url;
-        $url->params(array('action' => $action, 'confirmed' => 1));
-        echo $output->single_button($url, '将成绩导出到教务处');
-    } else {
-        echo $output->success();
-    }
+if ($key = generate_jwc_xml($action == 'all')) {
+    echo $output->success($key);
 }
 
 echo $output->footer();
 // die here
 
-function export_to_jwc($include_cats = false, $dryrun = true) {
+function generate_jwc_xml($include_cats = false) {
     global $course, $output, $jwc;
-
-    $jwc->dryrun = $dryrun;
 
     if ($include_cats) {
         echo $output->heading('导出分项成绩及总分到教务处');
@@ -85,80 +75,110 @@ function export_to_jwc($include_cats = false, $dryrun = true) {
     // 获得成绩类别和项信息
     $tree = new grade_tree($course->id, true, true);
 
-    // 总成绩算法必须是“简单加权平均分”
-    $total_aggregation = $tree->top_element['object']->aggregation;
-    if ($total_aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN2) {
-        echo $output->require_aggregation($course->id, $total_aggregation);
-        return false;
-    }
-
-    // 总成绩满分必须是100分
-    $total_grademax = (int)$tree->top_element['object']->grade_item->grademax;
-    if ($total_grademax != 100) {
-        echo $output->require_100_maxgrade($course->id, $total_grademax);
-        return false;
-    }
-
-    // 处理顶级成绩项
+    // 获取所有有效顶级成绩项，并整理数据
+    $total_item = null;
+    $sub_items = array();
+    $extra_items = array();
     $tops = $tree->top_element['children'];
     $items = array();
     foreach ($tops as $top) {
         $children = end($top['children']);
         $grade_item = $children['object'];
 
-        if (!$include_cats and $grade_item->itemtype != 'course') {
-            continue;
-        }
+        // 整理部分数据为整数，方便后面使用
+        $grade_item->grademax = (int)$grade_item->grademax;
+        $grade_item->aggregationcoef = (int)$grade_item->aggregationcoef;
 
         if ($grade_item->itemtype == 'course') {
             $grade_item->itemname = '总成绩';
-        } else if ($grade_item->itemtype == 'category') {
+            $total_item = $grade_item;
+            continue;
+        }
+
+        if (!$include_cats || $grade_item->grademax <= 0) {
+            continue;
+        }
+
+        if ($grade_item->itemtype == 'category') {
             //用类别名做成绩名
             $grade_item->itemname = $top['object']->fullname;
         }
 
-        if ($grade_item->grademax > 0) { //ignore 0 max grade items
-            // 整理数据为整数，方便后面使用
-            $grade_item->grademax = (int)$grade_item->grademax;
-            $grade_item->aggregationcoef = (int)$grade_item->aggregationcoef;
-
-            $items[$grade_item->id] = $grade_item;
+        if ($grade_item->aggregationcoef) {
+            // 额外加分
+            $extra_items[$grade_item->id] = $grade_item;
+        } else {
+            $sub_items[$grade_item->id] = $grade_item;
         }
+    }
+
+    /// 验证成绩项是否符合教务处要求
+    $result = true;
+
+    // 总成绩满分必须是100分
+    if ($total_item->grademax != MAX_TOTAL_GRADE) {
+        echo $output->require_max_total_grade($total_item->grademax);
+        $result = false;
+    }
+
+    if ($include_cats) {
+        // 总成绩算法必须是“简单加权平均分”
+        $total_aggregation = $tree->top_element['object']->aggregation;
+        if ($total_aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN2) {
+            echo $output->require_aggregation($total_aggregation);
+            $result = false;
+        }
+
+        // 子成绩项权重和必须为100
+        // 所有非加分的分项相加为100，才合法，除非不包含子类别
+        $weight_sum = 0;
+        foreach ($sub_items as $item) {
+            $weight_sum += $item->grademax;
+        }
+        if ($include_cats and $weight_sum != MAX_TOTAL_GRADE ) {
+            echo $output->require_100_weight($weight_sum);
+            $result = false;
+        }
+
+        // 子成绩项数量不能超过8
+        if (count($sub_items) > MAX_SUB_GRADE_COUNT) {
+            echo $output->require_max_subitems(count($sub_items));
+            $result = false;
+        }
+
+        // 加分成绩项数量不能超过2
+        if (count($extra_items) > MAX_EXTRA_SUB_GRADE_COUNT) {
+            echo $output->require_max_extraitems(count($extra_items));
+            $result = false;
+        }
+    }
+    if (!$result) {
+        echo $output->modify_items_link();
+        return false;
     }
 
     echo $output->box_start();
 
+    $xml = new gradebook_xml();
+
     echo '导出成绩项如下：';
-    $weight_sum = 0;
     $itemtable = new html_table();
     $itemtable->head = array('成绩分项名称', '权重', '加分');
-    foreach ($items as $item) {
-        if ($item->itemtype == 'course') {
-            $extracredit = '-';
-        } else {
-            $extracredit = $item->aggregationcoef ? '是' : '否';
-            if ($extracredit == '否') {
-                $weight_sum += $item->grademax;
-            }
-        }
-        $itemtable->data[] = new html_table_row(array($item->itemname, $item->grademax.'%', $extracredit));
+    foreach ($sub_items as $item) {
+        $itemtable->data[] = new html_table_row(array($item->itemname, $item->grademax.'%', '否'));
+        $xml->add_weight_item($item->id, $item->itemname, $item->grademax, $item->grademax);
     }
+    $xml->add_empty_weight_item(MAX_SUB_GRADE_COUNT - count($sub_items));
+
+    foreach ($extra_items as $item) {
+        $itemtable->data[] = new html_table_row(array($item->itemname, $item->grademax.'%', '是'));
+        $xml->add_weight_item($item->id, $item->itemname, $item->grademax, $item->grademax, true);
+    }
+    $xml->add_empty_weight_item(MAX_EXTRA_SUB_GRADE_COUNT - count($extra_items), true);
+
+    $itemtable->data[] = new html_table_row(array($total_item->itemname, $total_item->grademax.'%', '-'));
+
     echo html_writer::table($itemtable);
-
-    // 检验权重设置是否合法
-    // 所有非加分的分项相加为100，才合法，除非不包含子类别
-    if ($include_cats and $weight_sum != 100 ) {
-        echo $output->require_100_weight($course->id, $weight_sum);
-        echo $output->box_end();
-        return false;
-    }
-
-    // 导出权重
-    if (!$jwc->export_weights($items)) {
-        echo $output->error_text('成绩项导出出错！');
-        echo $output->box_end();
-        return false;
-    }
 
     // 用户成绩
     $geub = new grade_export_update_buffer();
@@ -172,5 +192,46 @@ function export_to_jwc($include_cats = false, $dryrun = true) {
 
     echo $output->box_end();
 
+    echo htmlentities($xml->saveXML());
     return true;
 }
+
+class gradebook_xml extends DOMDocument {
+    protected $gradebook;
+    protected $weights;
+    protected $grades;
+
+    public function __construct() {
+        parent::__construct('1.0', 'UTF-8');
+
+        $node = $this->createElement('gradebook');
+        $this->gradebook = $this->appendChild($node);
+        $node = $this->createElement('weights');
+        $this->weights = $this->gradebook->appendChild($node);
+        $node = $this->createElement('grades');
+        $this->grades = $this->gradebook->appendChild($node);
+    }
+
+    public function add_weight_item($id, $name, $weight, $maxgrade, $extra=false) {
+        $node = $this->createElement('item');
+        $node->setAttribute('id', $id);
+        $node->setAttribute('name', $name);
+        $node->setAttribute('weight', $maxgrade);
+        $node->setAttribute('maxgrade', $maxgrade);
+        $node->setAttribute('extra', $extra);
+        $this->weights->appendChild($node);
+    }
+
+    public function add_empty_weight_item($count, $extra=false) {
+        for ($i=0; $i<$count; $i++) {
+            $node = $this->createElement('item');
+            $node->setAttribute('id', 0);
+            $node->setAttribute('name', '');
+            $node->setAttribute('weight', 0);
+            $node->setAttribute('maxgrade', 0);
+            $node->setAttribute('extra', $extra);
+            $this->weights->appendChild($node);
+        }
+    }
+}
+

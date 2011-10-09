@@ -5,7 +5,7 @@ require_once($CFG->libdir.'/gradelib.php');
 
 class gradeexport_jwc_renderer extends plugin_renderer_base {
 
-    public function require_aggregation($courseid, $agg) {
+    public function require_aggregation($agg) {
         $aggnames = array(GRADE_AGGREGATE_MEAN             => get_string('aggregatemean', 'grades'),
             GRADE_AGGREGATE_WEIGHTED_MEAN    => get_string('aggregateweightedmean', 'grades'),
             GRADE_AGGREGATE_WEIGHTED_MEAN2   => get_string('aggregateweightedmean2', 'grades'),
@@ -17,28 +17,40 @@ class gradeexport_jwc_renderer extends plugin_renderer_base {
             GRADE_AGGREGATE_SUM              => get_string('aggregatesum', 'grades'));
         $output = html_writer::tag('p',
                     '总成绩的汇总算法必须是“<strong>'.$aggnames[GRADE_AGGREGATE_WEIGHTED_MEAN2].'</strong>”才能与教务处兼容。而您使用的是“'.$aggnames[$agg].'”。');
-        $url = new moodle_url('/grade/edit/tree/index.php', array('sesskey' => sesskey(), 'showadvanced' => 1, 'id' => $courseid));
-        $output .= html_writer::tag('p', html_writer::link($url, '点击此处设定成绩汇总算法'));
-
         return $this->notification($output);
     }
 
-    public function require_100_maxgrade($courseid, $current_maxgrade) {
+    public function require_max_total_grade($current_maxgrade) {
         $output = html_writer::tag('p',
-                    '总成绩的满分必须是“<strong>100</strong>”才能与教务处兼容。而您设定的是“'.$current_maxgrade.'”。');
-        $url = new moodle_url('/grade/edit/tree/index.php', array('sesskey' => sesskey(), 'showadvanced' => 0, 'id' => $courseid));
-        $output .= html_writer::tag('p', html_writer::link($url, '点击此处设定总成绩的满分'));
-
+                    '总成绩的满分必须是“<strong>'.MAX_TOTAL_GRADE.'</strong>”才能与教务处兼容。而现在是“'.$current_maxgrade.'”。');
         return $this->notification($output);
     }
 
-    public function require_100_weight($courseid, $current_weight) {
+    public function require_100_weight($current_weight) {
         $output = html_writer::tag('p',
-                    '所有分项成绩的权重之和必须是“<strong>100%</strong>”才能与教务处兼容。而您设定的是“'.$current_weight.'%”。');
-        $url = new moodle_url('/grade/edit/tree/index.php', array('sesskey' => sesskey(), 'showadvanced' => 0, 'id' => $courseid));
-        $output .= html_writer::tag('p', html_writer::link($url, '点击此处修改各分项成绩的权重'));
-
+                    '所有顶级分项成绩的满分之和必须是“<strong>'.MAX_TOTAL_GRADE.'</strong>”才能与教务处兼容。而现在是“'.$current_weight.'”。');
         return $this->notification($output);
+    }
+
+    public function require_max_subitems($current) {
+        $output = html_writer::tag('p',
+                    '所有顶级非加分的分项成绩总数必须小于“<strong>'.MAX_SUB_GRADE_COUNT.'</strong>”才能与教务处兼容。而现在是“'.$current.'”。');
+        return $this->notification($output);
+    }
+
+    public function require_max_extraitems($current) {
+        $output = html_writer::tag('p',
+                    '所有顶级加分分项成绩总数必须小于“<strong>'.MAX_EXTRA_SUB_GRADE_COUNT.'</strong>”才能与教务处兼容。而现在是“'.$current.'”。');
+        return $this->notification($output);
+    }
+
+    public function modify_items_link($courseid = 0) {
+        global $COURSE;
+        if ($courseid == 0) {
+            $courseid = $COURSE->id;
+        }
+        $url = new moodle_url('/grade/edit/tree/index.php', array('sesskey' => sesskey(), 'showadvanced' => 0, 'id' => $courseid));
+        return $this->notification(html_writer::tag('p', html_writer::link($url, '点击此处修改成绩设置')));
     }
 
     public function choose_export_method() {
