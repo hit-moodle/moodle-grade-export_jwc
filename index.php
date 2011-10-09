@@ -17,7 +17,6 @@
 
 require_once '../../../config.php';
 require_once $CFG->dirroot.'/grade/export/lib.php';
-require_once $CFG->dirroot.'/grade/export/jwc/locallib.php';
 
 $id = required_param('id', PARAM_INT); // course id
 $action = optional_param('action', '', PARAM_ACTION);
@@ -42,42 +41,6 @@ if (!empty($CFG->gradepublishing)) {
 }
 
 $output = $PAGE->get_renderer('gradeexport_jwc');
-
-// CAS用户？
-if ($USER->auth != 'cas') {
-    echo $output->require_cas();
-    echo $output->footer();
-    die;
-}
-
-$jwc = get_jwc_instance();
-
-// 设置教师编号
-$jwcid = $DB->get_field('grade_export_jwc', 'jwcid', array('userid' => $USER->id));
-if (!$jwcid or !$jwc->set_user($USER, $jwcid)) {
-    $form = new setup_jwcid_form(new moodle_url('/grade/export/jwc/index.php', array('id' =>$id)), array($USER));
-    if ($jwcid) {
-        echo $output->notification('教师编号有误，请重新设置');
-        $form->set_data(array('jwcid' => $jwcid));
-    }
-    if ($data = $form->get_data()) {
-        $jwcid = $data->jwcid;
-        $data->userid = $USER->id;
-        $DB->insert_record('grade_export_jwc', $data);
-    } else {
-        $form->display();
-        echo $output->footer();
-        die;
-    }
-}
-
-// 课程编号是否存在
-if (!$jwc->set_course($course)) {
-    $current_courses = $jwc->get_courses();
-    echo $output->require_idnumber($course->id, $current_courses);
-    echo $output->footer();
-    die;
-}
 
 // 选择导出方式
 if (empty($action)) {
