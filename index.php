@@ -241,7 +241,7 @@ function generate_jwc_xml($include_cats = false) {
 
     // 存入数据库
     $new = new stdClass();
-    $new->xml = $xml->saveXML();
+    $new->xml = $xml->asXML();
     $new->requestkey = md5($new->xml);
     $new->expiredtime = time();
     if ($old = $DB->get_record('grade_export_jwc', array('requestkey' => $new->requestkey))) {
@@ -254,55 +254,57 @@ function generate_jwc_xml($include_cats = false) {
     return $new->requestkey;
 }
 
-class gradebook_xml extends DOMDocument {
-    protected $gradebook;
-    protected $weights;
-    protected $grades;
+class gradebook_xml {
+    protected $xmlobj;
 
     public function __construct() {
-        parent::__construct('1.0', 'UTF-8');
-
-        $node = $this->createElement('gradebook');
-        $this->gradebook = $this->appendChild($node);
-        $node = $this->createElement('weights');
-        $this->weights = $this->gradebook->appendChild($node);
-        $node = $this->createElement('grades');
-        $this->grades = $this->gradebook->appendChild($node);
+        $xmlstr = <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<gradebook>
+    <weights>
+    </weights>
+    <grades>
+    </grades>
+</gradebook>
+XML;
+        $this->xmlobj = new SimpleXMLElement($xmlstr);
     }
 
     public function add_weight_item($id, $name, $weight, $maxgrade, $extra=false) {
-        $node = $this->createElement('item', $name);
-        $node->setAttribute('id', $id);
-        $node->setAttribute('weight', $maxgrade);
-        $node->setAttribute('maxgrade', $maxgrade);
-        $node->setAttribute('extra', $extra);
-        $this->weights->appendChild($node);
+        $item = $this->xmlobj->weights->addChild('item');
+        $item->addChild('id', $id);
+        $item->addChild('name', $name);
+        $item->addChild('weight', $maxgrade);
+        $item->addChild('maxgrade', $maxgrade);
+        $item->addChild('extra', $extra);
     }
 
     public function add_empty_weight_item($count, $extra=false) {
         for ($i=0; $i<$count; $i++) {
-            $node = $this->createElement('item', '');
-            $node->setAttribute('id', 0);
-            $node->setAttribute('weight', 0);
-            $node->setAttribute('maxgrade', 0);
-            $node->setAttribute('extra', $extra);
-            $this->weights->appendChild($node);
+            $item = $this->xmlobj->weights->addChild('item');
+            $item->addChild('id', 0);
+            $item->addChild('name', '');
+            $item->addChild('weight', 0);
+            $item->addChild('maxgrade', 0);
+            $item->addChild('extra', $extra);
         }
     }
 
     public function add_user($idnumber, $name, array $grades) {
-        $node = $this->createElement('user', $name);
-        $node->setAttribute('idnumber', $idnumber);
-        $user_node = $this->grades->appendChild($node);
+        $item = $this->xmlobj->grades->addChild('student');
+        $item->addChild('idnumber', $idnumber);
+        $item->addChild('name', $name);
         foreach ($grades as $itemid => $grade) {
             if ($itemid != 0) {
-                $node = $this->createElement('grade', $grade);
-                $node->setAttribute('itemid', $itemid);
+                $item->addChild('grade'.$itemid, $grade);
             } else {
-                $node = $this->createElement('total', $grade);
+                $item->addChild('total', $grade);
             }
-            $user_node->appendChild($node);
         }
+    }
+
+    public function asXML() {
+        return $this->xmlobj->asXML();
     }
 }
 
