@@ -184,13 +184,11 @@ function generate_jwc_xml($include_cats = false) {
         $itemtable->data[] = new html_table_row(array($item->itemname, $item->grademax.'%', '否'));
         $xml->add_weight_item($item->id, $item->itemname, $item->grademax, $item->grademax);
     }
-    $xml->add_empty_weight_item(MAX_SUB_GRADE_COUNT - count($sub_items));
 
     foreach ($extra_items as $item) {
         $itemtable->data[] = new html_table_row(array($item->itemname, $item->grademax.'%', '是'));
         $xml->add_weight_item($item->id, $item->itemname, $item->grademax, $item->grademax, true);
     }
-    $xml->add_empty_weight_item(MAX_EXTRA_SUB_GRADE_COUNT - count($extra_items), true);
 
     $itemtable->data[] = new html_table_row(array($total_item->itemname, $total_item->grademax.'%', '-'));
 
