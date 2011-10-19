@@ -27,12 +27,14 @@ $key = optional_param('key', 0, PARAM_ALPHANUM);
 
 if ($key) {
     // print xml
+    header('Content-type: application/xhtml+xml; charset=utf-8');
     $obj = $DB->get_record('grade_export_jwc', array('requestkey' => $key));
     if ($obj) {
-        header('Content-type: application/xhtml+xml; charset=utf-8');
         echo $obj->xml;
     } else {
-        echo '请求码无效或已过期';
+        $xml = new gradebook_xml();
+        $xml->error('请求码无效或已过期');
+        echo $xml->asXML();
     }
     die;
 }
@@ -261,10 +263,12 @@ class gradebook_xml {
         $xmlstr = <<<XML
 <?xml version="1.0" encoding="UTF-8"?>
 <gradebook>
-    <weights>
-    </weights>
-    <grades>
-    </grades>
+    <return>
+        <success>1</success>
+        <errormsg/>
+    </return>
+    <weights/>
+    <grades/>
 </gradebook>
 XML;
         $this->xmlobj = new SimpleXMLElement($xmlstr);
@@ -305,6 +309,11 @@ XML;
 
     public function asXML() {
         return $this->xmlobj->asXML();
+    }
+
+    public function error($msg) {
+        $this->xmlobj->return->success = 0;
+        $this->xmlobj->return->errormsg = $msg;
     }
 }
 
