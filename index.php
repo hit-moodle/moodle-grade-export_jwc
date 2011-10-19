@@ -177,7 +177,8 @@ function generate_jwc_xml($include_cats = false) {
 
     $xml = new gradebook_xml();
 
-    echo '导出成绩项权重如下：';
+    echo $output->heading('可导出成绩项如下', 3);
+
     $itemtable = new html_table();
     $itemtable->head = array('成绩分项名称', '权重', '加分');
     foreach ($sub_items as $item) {
@@ -195,7 +196,8 @@ function generate_jwc_xml($include_cats = false) {
     echo html_writer::table($itemtable);
 
     // 用户成绩
-    echo '导出成绩如下：';
+    echo $output->heading('可导出成绩如下', 3);
+
     $items = $sub_items + $extra_items;
     $items[$total_item->id] = $total_item;
     $geub = new grade_export_update_buffer();

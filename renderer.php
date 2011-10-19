@@ -57,7 +57,7 @@ class gradeexport_jwc_renderer extends plugin_renderer_base {
         global $PAGE;
 
         $output = $this->box_start();
-        $output .= html_writer::tag('p', '准备开始将成绩导出到教务处成绩管理系统。');
+        $output .= html_writer::tag('p', '准备将成绩导出到教务处成绩管理系统。');
         $output .= html_writer::tag('p', '导出后的成绩只是“保存”在教务处网站，您还有机会审核、修正，然后再提交。');
         $output .= html_writer::tag('p', '请选择导出方式：');
 
