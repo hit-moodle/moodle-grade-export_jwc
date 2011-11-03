@@ -222,7 +222,7 @@ function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $d
 
     if ($dryrun) {
         echo $output->box_start();
-        echo $output->heading('可导出成绩项如下', 3);
+        echo $output->heading('可导出成绩项', 3);
     }
 
     $itemtable = new html_table();
@@ -245,7 +245,7 @@ function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $d
 
     // 用户成绩
     if ($dryrun) {
-        echo $output->heading('可导出成绩如下', 3);
+        echo $output->heading('可导出成绩', 3);
     }
 
     $items = $sub_items + $extra_items;
@@ -301,16 +301,22 @@ function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $d
     }
 
     // 存入数据库
-    $new = new stdClass();
-    $new->xml = $xml->asXML();
-    $new->requestkey = md5($new->xml);
-    $new->expiredtime = time();
-    if (!$dryrun) {
-        if ($old = $DB->get_record('grade_export_jwc', array('requestkey' => $new->requestkey))) {
-            $old->expiredtime = time() + KEY_EXPIRED_TIME;
-            $DB->update_record('grade_export_jwc', $old);
-        } else {
-            $DB->insert_record('grade_export_jwc', $new);
+    foreach ($jwc_courses as $jwc_course) {
+        $xml->set_xkid($jwc_course->xkid);
+        $new = new stdClass();
+        $new->xml = $xml->asXML();
+        $new->requestkey = md5($new->xml);
+        $new->expiredtime = time();
+        if (!$dryrun) {
+            if ($old = $DB->get_record('grade_export_jwc', array('requestkey' => $new->requestkey))) {
+                $old->expiredtime = time() + KEY_EXPIRED_TIME;
+                $DB->update_record('grade_export_jwc', $old);
+            } else {
+                $DB->insert_record('grade_export_jwc', $new);
+            }
+
+            // real export
+            echo trim(strip_tags($jwc->export($jwc_course->xkid, $new->requestkey)));
         }
     }
 
@@ -328,6 +334,7 @@ class gradebook_xml {
         <success>1</success>
         <errormsg/>
     </return>
+    <xkid/>
     <weights/>
     <grades/>
 </gradebook>
@@ -361,11 +368,16 @@ XML;
         $item->addChild('name', $name);
         foreach ($grades as $itemid => $grade) {
             if ($itemid != 0) {
-                $item->addChild('grade'.$itemid, $grade);
+                $child = $item->addChild('grade', $grade);
+                $child['itemid'] = $itemid;
             } else {
                 $item->addChild('total', $grade);
             }
         }
+    }
+
+    public function set_xkid($xkid) {
+        $this->xmlobj->xkid = $xkid;
     }
 
     public function asXML() {
