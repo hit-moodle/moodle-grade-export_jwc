@@ -43,6 +43,7 @@ if ($key) {
 
 $id = required_param('id', PARAM_INT); // course id
 $action = optional_param('action', '', PARAM_ACTION);
+$dryrun = optional_param('dryrun', 1, PARAM_BOOL);
 
 $PAGE->set_url('/grade/export/jwc/index.php', array('id'=>$id));
 
@@ -93,21 +94,34 @@ if (empty($action)) {
     die;
 }
 
-if ($key = generate_jwc_xml($action == 'all')) {
+$export_users = $jwc->get_students($course->idnumber, array($USER), $semester, $errormsg);
+if ($export_users === false) {
+    echo $output->notification($errormsg);
+    echo $output->footer();
+    die;
+}
+
+if ($key = generate_jwc_xml($jwc_courses, $export_users, $action == 'all', $dryrun)) {
     echo $output->success($key);
 }
 
 echo $output->footer();
 // die here
 
-function generate_jwc_xml($include_cats = false) {
+function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $dryrun = true) {
     global $course, $output, $jwc, $DB;
 
     if ($include_cats) {
-        echo $output->heading('导出分项成绩及总分到教务处');
+        $heading = '导出分项成绩及总分到教务处';
     } else {
-        echo $output->heading('导出总分到教务处');
+        $heading = '导出总分到教务处';
     }
+    if ($dryrun) {
+        $heading .= '(模拟)';
+    } else {
+        $heading .= '(正式)';
+    }
+    echo $output->heading($heading);
 
     //first make sure we have proper final grades - this must be done before constructing of the grade tree
     grade_regrade_final_grades($course->id);
@@ -229,10 +243,11 @@ function generate_jwc_xml($include_cats = false) {
     $gui->init();
 
     $usertable = new html_table();
-    $usertable->head = array('姓名', '学号');
+    $usertable->head = array('序号', '姓名', '学号');
     foreach ($items as $item) {
         $usertable->head[] = $item->itemname;
     }
+    $count = 0;
     while ($userdata = $gui->next_user()) {
         $user = $userdata->user;
 
@@ -241,7 +256,14 @@ function generate_jwc_xml($include_cats = false) {
             continue;
         }
 
+        if (!in_array($user->id, $export_users)) {
+            // 教务处无记录用户不导出
+            continue;
+        }
+
         $row = array();
+        $count++;
+        $row[] = new html_table_cell($count);
         $row[] = new html_table_cell($user->firstname);
         $row[] = new html_table_cell($user->idnumber);
 
