@@ -15,8 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+
 require_once '../../../config.php';
 require_once $CFG->dirroot.'/grade/export/lib.php';
+require_once $CFG->dirroot.'/enrol/jwc/jwc.php'; // jwc_helper class
 
 define('MAX_SUB_GRADE_COUNT', 8);
 define('MAX_EXTRA_SUB_GRADE_COUNT', 2);
@@ -61,6 +63,28 @@ if (!empty($CFG->gradepublishing)) {
 }
 
 $output = $PAGE->get_renderer('gradeexport_jwc');
+
+$jwc = new jwc_helper();
+if (!$semester = get_config('enrol_jwc', 'semester')) {
+    die('管理员未设置学期，请立刻通知他！');
+}
+
+// CAS用户？
+if ($USER->auth != 'cas') {
+    echo $output->require_cas();
+    echo $output->footer();
+    die;
+}
+
+// 课程编号必须有效
+$errormsg = '';
+$jwc_courses = $jwc->get_matched_courses($course->idnumber, array($USER), $semester, $errormsg);
+if (empty($jwc_courses)) {
+    echo $output->require_idnumber();
+    echo $errormsg;
+    echo $output->footer();
+    die;
+}
 
 // 选择导出方式
 if (empty($action)) {

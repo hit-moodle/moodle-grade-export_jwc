@@ -44,6 +44,23 @@ class gradeexport_jwc_renderer extends plugin_renderer_base {
         return $this->notification($output);
     }
 
+    public function require_idnumber($courseid = 0) {
+        global $COURSE;
+        if ($courseid == 0) {
+            $courseid = $COURSE->id;
+        }
+        $text = '此课程的课程编号为空，或者无效，或者当前学期没有开课。请设置为教务处官方发布的课程编号。<br />';
+
+        $url = new moodle_url('/course/edit.php', array('id' => $courseid));
+        $link = html_writer::link($url, '点击此处设置课程编号');
+
+        return $this->notification($text.$link);
+    }
+
+    public function require_cas() {
+        return $this->notification('为了安全，只有使用HITID登录的用户才能使用此功能。');
+    }
+
     public function modify_items_link($courseid = 0) {
         global $COURSE;
         if ($courseid == 0) {
