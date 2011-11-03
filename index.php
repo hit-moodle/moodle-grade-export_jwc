@@ -101,8 +101,15 @@ if ($export_users === false) {
     die;
 }
 
-if ($key = generate_jwc_xml($jwc_courses, $export_users, $action == 'all', $dryrun)) {
-    echo $output->success($key);
+if (generate_jwc_xml($jwc_courses, $export_users, $action == 'all', $dryrun)) {
+    if ($dryrun) {
+        echo '模拟导出结束，未发现问题。如果上面信息正确，请点击下面的按钮，正式将数据导出。';
+        $url = $PAGE->url;
+        $url->params(array('action' => $action, 'dryrun' => 0));
+        echo $output->single_button($url, '将成绩导出到教务处');
+    } else {
+        echo $output->success();
+    }
 }
 
 echo $output->footer();
@@ -211,11 +218,12 @@ function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $d
         return false;
     }
 
-    echo $output->box_start();
-
     $xml = new gradebook_xml();
 
-    echo $output->heading('可导出成绩项如下', 3);
+    if ($dryrun) {
+        echo $output->box_start();
+        echo $output->heading('可导出成绩项如下', 3);
+    }
 
     $itemtable = new html_table();
     $itemtable->head = array('成绩分项名称', '权重', '加分');
@@ -231,10 +239,14 @@ function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $d
 
     $itemtable->data[] = new html_table_row(array($total_item->itemname, $total_item->grademax.'%', '-'));
 
-    echo html_writer::table($itemtable);
+    if ($dryrun) {
+        echo html_writer::table($itemtable);
+    }
 
     // 用户成绩
-    echo $output->heading('可导出成绩如下', 3);
+    if ($dryrun) {
+        echo $output->heading('可导出成绩如下', 3);
+    }
 
     $items = $sub_items + $extra_items;
     $items[$total_item->id] = $total_item;
@@ -283,23 +295,26 @@ function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $d
     }
     $gui->close();
     $geub->close();
-    echo html_writer::table($usertable);
-
-    echo $output->box_end();
+    if ($dryrun) {
+        echo html_writer::table($usertable);
+        echo $output->box_end();
+    }
 
     // 存入数据库
     $new = new stdClass();
     $new->xml = $xml->asXML();
     $new->requestkey = md5($new->xml);
     $new->expiredtime = time();
-    if ($old = $DB->get_record('grade_export_jwc', array('requestkey' => $new->requestkey))) {
-        $old->expiredtime = time() + KEY_EXPIRED_TIME;
-        $DB->update_record('grade_export_jwc', $old);
-    } else {
-        $DB->insert_record('grade_export_jwc', $new);
+    if (!$dryrun) {
+        if ($old = $DB->get_record('grade_export_jwc', array('requestkey' => $new->requestkey))) {
+            $old->expiredtime = time() + KEY_EXPIRED_TIME;
+            $DB->update_record('grade_export_jwc', $old);
+        } else {
+            $DB->insert_record('grade_export_jwc', $new);
+        }
     }
 
-    return $new->requestkey;
+    return true;
 }
 
 class gradebook_xml {
