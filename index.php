@@ -70,8 +70,8 @@ if (!$semester = get_config('enrol_jwc', 'semester')) {
     die('管理员未设置学期，请立刻通知他！');
 }
 
-// CAS用户？
-if ($USER->auth != 'cas') {
+// CAS教师？
+if ($USER->auth != 'cas' or $USER->address != 1) {
     echo $output->require_cas();
     echo $output->footer();
     die;
