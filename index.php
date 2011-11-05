@@ -31,7 +31,7 @@ if ($key) {
     // print xml
     header('Content-type: application/xhtml+xml; charset=utf-8');
     $obj = $DB->get_record('grade_export_jwc', array('requestkey' => $key));
-    if ($obj) {
+    if ($obj and $obj->expiredtime > time()) {
         echo $obj->xml;
     } else {
         $xml = new gradebook_xml();
