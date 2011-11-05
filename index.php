@@ -316,7 +316,10 @@ function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $d
             }
 
             // real export
-            echo trim(strip_tags($jwc->export($jwc_course->xkid, $new->requestkey)));
+            if (!$jwc->export($jwc_course->xkid, $new->requestkey)) {
+                echo $output->notification('导出过程出错。请将这串字符串报告给管理员：'.$new->requestkey);
+                return false;
+            }
         }
     }
 
