@@ -82,7 +82,6 @@ $errormsg = '';
 $jwc_courses = $jwc->get_matched_courses($course->idnumber, array($USER), $semester, $errormsg);
 if (empty($jwc_courses)) {
     echo $output->require_idnumber();
-    echo $errormsg;
     echo $output->footer();
     die;
 }
