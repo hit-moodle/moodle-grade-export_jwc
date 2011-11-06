@@ -105,7 +105,7 @@ if (generate_jwc_xml($jwc_courses, $export_users, $action == 'all', $dryrun)) {
         echo '模拟导出结束，未发现问题。如果上面信息正确，请点击下面的按钮，正式将数据导出。';
         $url = $PAGE->url;
         $url->params(array('action' => $action, 'dryrun' => 0));
-        echo $output->single_button($url, '将成绩导出到教务处');
+        echo $output->single_button($url, '将成绩导出到教务处(覆盖教务处已有数据)');
     } else {
         echo $output->success();
     }
