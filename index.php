@@ -31,7 +31,7 @@ if ($key) {
     // print xml
     header('Content-type: application/xhtml+xml; charset=utf-8');
     $obj = $DB->get_record('grade_export_jwc', array('requestkey' => $key));
-    if ($obj and $obj->expiredtime > time()) {
+    if ($obj and $obj->expiredtime >= time()) {
         echo $obj->xml;
     } else {
         $xml = new gradebook_xml();
@@ -305,7 +305,7 @@ function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $d
         $new = new stdClass();
         $new->xml = $xml->asXML();
         $new->requestkey = md5($new->xml);
-        $new->expiredtime = time();
+        $new->expiredtime = time() + KEY_EXPIRED_TIME;
         if (!$dryrun) {
             if ($old = $DB->get_record('grade_export_jwc', array('requestkey' => $new->requestkey))) {
                 $old->expiredtime = time() + KEY_EXPIRED_TIME;
