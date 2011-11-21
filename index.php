@@ -267,7 +267,7 @@ function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $d
             continue;
         }
 
-        if (!in_array($user->id, $export_users)) {
+        if (!array_key_exists($user->id, $export_users)) {
             // 教务处无记录用户不导出
             continue;
         }
