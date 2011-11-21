@@ -92,6 +92,6 @@ class gradeexport_jwc_renderer extends plugin_renderer_base {
 
     public function success() {
         $link = html_writer::link('http://xscj.hit.edu.cn/hitjwgl/teacher/log.asp', '登录教务处', array('target' => '_blank'));
-        return '成绩上传成功。请'.$link.'检查、确认和提交。';
+        return '成绩上传成功。可能有未使用乐学网或未使用HITID登录的学生成绩无法上传，请'.$link.'检查、确认和提交。';
     }
 }
