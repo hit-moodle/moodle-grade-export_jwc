@@ -116,7 +116,7 @@ echo $output->footer();
 // die here
 
 function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $dryrun = true) {
-    global $course, $output, $jwc, $DB;
+    global $course, $output, $jwc, $DB, $USER;
 
     if ($include_cats) {
         $heading = '导出分项成绩及总分到教务处';
@@ -313,6 +313,8 @@ function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $d
         $new->xml = $xml->asXML();
         $new->requestkey = md5($new->xml);
         $new->expiredtime = time() + KEY_EXPIRED_TIME;
+        $new->user = $USER->id;
+        $new->course = $course->id;
         if (!$dryrun) {
             if ($old = $DB->get_record('grade_export_jwc', array('requestkey' => $new->requestkey))) {
                 $old->expiredtime = time() + KEY_EXPIRED_TIME;

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="grade/export/jwc/db" VERSION="20111009" COMMENT="XMLDB file for Moodle grade/export/jwc"
+<XMLDB PATH="grade/export/jwc/db" VERSION="20111202" COMMENT="XMLDB file for Moodle grade/export/jwc"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../../lib/xmldb/xmldb.xsd"
 >
@@ -9,7 +9,9 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="requestkey"/>
         <FIELD NAME="requestkey" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="xml的md5值" PREVIOUS="id" NEXT="xml"/>
         <FIELD NAME="xml" TYPE="text" LENGTH="big" NOTNULL="true" SEQUENCE="false" PREVIOUS="requestkey" NEXT="expiredtime"/>
-        <FIELD NAME="expiredtime" TYPE="int" LENGTH="20" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" PREVIOUS="xml"/>
+        <FIELD NAME="expiredtime" TYPE="int" LENGTH="20" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" PREVIOUS="xml" NEXT="user"/>
+        <FIELD NAME="user" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="expiredtime" NEXT="course"/>
+        <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="user"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
