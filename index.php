@@ -287,8 +287,7 @@ function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $d
 
         $grades = array();
         foreach ($userdata->grades as $itemid => $grade) {
-            //$finalgrade = grade_format_gradevalue($grade->finalgrade, $items[$itemid], true, GRADE_DISPLAY_TYPE_REAL);
-            $finalgrade = $grade->finalgrade;
+            $finalgrade = grade_format_gradevalue($grade->finalgrade, $items[$itemid], true, GRADE_DISPLAY_TYPE_REAL);
             $row[] = new html_table_cell($finalgrade);
             if ($itemid != $total_item->id) {
                 $grades[$itemid] = $finalgrade;
