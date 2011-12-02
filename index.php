@@ -145,6 +145,12 @@ function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $d
         $children = end($top['children']);
         $grade_item = $children['object'];
 
+        // 有些课程的成绩项会出现奇怪的'filler'，不晓得为什么，暂时先这么处理
+        if ($grade_item === 'filler') {
+            $children = reset($children['children']);
+            $grade_item = $children['object'];
+        }
+
         // 整理部分数据为整数，方便后面使用
         $grade_item->grademax = (int)$grade_item->grademax;
         $grade_item->aggregationcoef = (int)$grade_item->aggregationcoef;
