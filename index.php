@@ -94,7 +94,8 @@ if (empty($action)) {
     die;
 }
 
-$export_users = $jwc->get_students($course->idnumber, array($USER), $semester, $errormsg);
+$nonexist_users = array();
+$export_users = $jwc->get_students($course->idnumber, array($USER), $semester, $errormsg, $nonexist_users);
 if ($export_users === false) {
     echo $output->notification($errormsg);
     echo $output->footer();
@@ -116,7 +117,7 @@ echo $output->footer();
 // die here
 
 function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $dryrun = true) {
-    global $course, $output, $jwc, $DB, $USER;
+    global $course, $output, $jwc, $DB, $USER, $nonexist_users;
 
     if ($include_cats) {
         $heading = '导出分项成绩及总分到教务处';
@@ -248,6 +249,22 @@ function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $d
     if ($dryrun) {
         echo html_writer::table($itemtable);
     }
+
+    // 本地不存在的用户
+    echo $output->heading('教务处有记录而本站无对应用户的学生', 3);
+
+    $usertable = new html_table();
+    $usertable->head = array('序号', '姓名', '学号');
+    $count = 0;
+    foreach ($nonexist_users as $user) {
+        $row = array();
+        $count++;
+        $row[] = new html_table_cell($count);
+        $row[] = new html_table_cell($user->name);
+        $row[] = new html_table_cell($user->code);
+        $usertable->data[] = new html_table_row($row);
+    }
+    echo html_writer::table($usertable);
 
     // 用户成绩
     if ($dryrun) {
