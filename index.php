@@ -304,13 +304,14 @@ function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $d
 
         $grades = array();
         foreach ($userdata->grades as $itemid => $grade) {
-            $finalgrade = grade_format_gradevalue($grade->finalgrade, $items[$itemid], true, GRADE_DISPLAY_TYPE_REAL);
-            $row[] = new html_table_cell($finalgrade);
-            if ($itemid != $total_item->id) {
-                $grades[$itemid] = $finalgrade;
-            } else {
+            if ($itemid == $total_item->id) { // 总分
+                $finalgrade = round($grade->finalgrade);
                 $grades[0] = $finalgrade;
+            } else {
+                $finalgrade = round($grade->finalgrade, 1);
+                $grades[$itemid] = $finalgrade;
             }
+            $row[] = new html_table_cell($finalgrade);
         }
         $xml->add_user($user->idnumber, $user->firstname, $grades);
         $usertable->data[] = new html_table_row($row);
