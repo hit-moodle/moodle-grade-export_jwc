@@ -251,20 +251,22 @@ function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $d
     }
 
     // 本地不存在的用户
-    echo $output->heading('教务处有记录而本站无对应用户的学生', 3);
+    if (!empty($nonexist_users)) {
+        echo $output->heading('教务处有记录而本站无对应用户的学生', 3);
 
-    $usertable = new html_table();
-    $usertable->head = array('序号', '姓名', '学号');
-    $count = 0;
-    foreach ($nonexist_users as $user) {
-        $row = array();
-        $count++;
-        $row[] = new html_table_cell($count);
-        $row[] = new html_table_cell($user->name);
-        $row[] = new html_table_cell($user->code);
-        $usertable->data[] = new html_table_row($row);
+        $usertable = new html_table();
+        $usertable->head = array('序号', '姓名', '学号');
+        $count = 0;
+        foreach ($nonexist_users as $user) {
+            $row = array();
+            $count++;
+            $row[] = new html_table_cell($count);
+            $row[] = new html_table_cell($user->name);
+            $row[] = new html_table_cell($user->code);
+            $usertable->data[] = new html_table_row($row);
+        }
+        echo html_writer::table($usertable);
     }
-    echo html_writer::table($usertable);
 
     // 用户成绩
     if ($dryrun) {
