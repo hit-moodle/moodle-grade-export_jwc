@@ -136,47 +136,40 @@ function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $d
 
     // 获得成绩类别和项信息
     $tree = new grade_tree($course->id, true, true);
+    $levels = $tree->get_levels();
 
-    // 获取所有有效顶级成绩项，并整理数据
-    $total_item = null;
+    // 总分
+    $total_item = normalize_grade_item($levels[0][0]['object']->grade_item);
+
     $sub_items = array();
     $extra_items = array();
-    $tops = $tree->top_element['children'];
     $items = array();
-    foreach ($tops as $top) {
-        $children = end($top['children']);
-        $grade_item = $children['object'];
 
-        // 有些课程的成绩项会出现奇怪的'filler'，不晓得为什么，暂时先这么处理
-        if ($grade_item === 'filler') {
-            $children = reset($children['children']);
-            $grade_item = $children['object'];
-        }
+    // 顶级成绩分类和项
+    if (array_key_exists(1, $levels) && $include_cats) {
+        foreach ($levels[1] as $element) {
 
-        // 整理部分数据为整数，方便后面使用
-        $grade_item->grademax = (int)$grade_item->grademax;
-        $grade_item->aggregationcoef = (int)$grade_item->aggregationcoef;
+            if ($element['type'] == 'item') {
+                $grade_item = normalize_grade_item($element['object']);
+            } else if ($element['type'] == 'category') {
+                $tmp = array_pop($element['children']);
+                $grade_item = normalize_grade_item($tmp['object']);
+                //用类别名做成绩名
+                $grade_item->itemname = $element['object']->fullname;
+            } else { // ignore unused fillers
+                continue;
+            }
 
-        if ($grade_item->itemtype == 'course') {
-            $grade_item->itemname = '总成绩';
-            $total_item = $grade_item;
-            continue;
-        }
+            if ($grade_item->grademax <= 0) { // 不计分成绩项/类别
+                continue;
+            }
 
-        if (!$include_cats || $grade_item->grademax <= 0) {
-            continue;
-        }
-
-        if ($grade_item->itemtype == 'category') {
-            //用类别名做成绩名
-            $grade_item->itemname = $top['object']->fullname;
-        }
-
-        if ($grade_item->aggregationcoef) {
-            // 额外加分
-            $extra_items[$grade_item->id] = $grade_item;
-        } else {
-            $sub_items[$grade_item->id] = $grade_item;
+            if ($grade_item->aggregationcoef) {
+                // 额外加分
+                $extra_items[$grade_item->id] = $grade_item;
+            } else {
+                $sub_items[$grade_item->id] = $grade_item;
+            }
         }
     }
 
@@ -191,8 +184,8 @@ function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $d
 
     if ($include_cats) {
         // 总成绩算法必须是“简单加权平均分”
-        $total_aggregation = $tree->top_element['object']->aggregation;
-        if ($total_aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN2) {
+        $total_aggregation = $levels[0][0]['object']->aggregation;
+        if ($total_aggregation != GRADE_AGGREGATE_WEIGHTED_MEAN2 and $total_aggregation != GRADE_AGGREGATE_SUM) {
             echo $output->require_aggregation($total_aggregation);
             $result = false;
         }
@@ -353,6 +346,19 @@ function generate_jwc_xml($jwc_courses, $export_users, $include_cats = false, $d
     }
 
     return true;
+}
+
+// 标准化整理数据
+function normalize_grade_item($item) {
+    // 整理部分数据为整数，方便后面使用
+    $item->grademax = round($item->grademax);
+    $item->aggregationcoef = round($item->aggregationcoef);
+
+    if ($item->itemtype == 'course') {
+        $item->itemname = '总成绩';
+    }
+
+    return $item;
 }
 
 class gradebook_xml {

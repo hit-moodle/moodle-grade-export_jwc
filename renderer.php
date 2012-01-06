@@ -16,7 +16,7 @@ class gradeexport_jwc_renderer extends plugin_renderer_base {
             GRADE_AGGREGATE_MODE             => get_string('aggregatemode', 'grades'),
             GRADE_AGGREGATE_SUM              => get_string('aggregatesum', 'grades'));
         $output = html_writer::tag('p',
-                    '总成绩的汇总算法必须是“<strong>'.$aggnames[GRADE_AGGREGATE_WEIGHTED_MEAN2].'</strong>”才能与教务处兼容。而您使用的是“'.$aggnames[$agg].'”。');
+                    '总成绩的汇总算法必须是“<strong>'.$aggnames[GRADE_AGGREGATE_SUM].'</strong>”或“<strong>'.$aggnames[GRADE_AGGREGATE_WEIGHTED_MEAN2].'</strong>”才能与教务处兼容。而您使用的是“'.$aggnames[$agg].'”。');
         return $this->notification($output);
     }
 
